@@ -1,7 +1,7 @@
 package io.thill.kafkacap.capture.populator;
 
-import io.thill.kafkacap.clock.Clock;
-import io.thill.kafkacap.constant.RecordHeaderKeys;
+import io.thill.kafkacap.util.clock.Clock;
+import io.thill.kafkacap.util.constant.RecordHeaderKeys;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 

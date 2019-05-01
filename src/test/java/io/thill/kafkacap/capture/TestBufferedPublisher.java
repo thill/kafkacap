@@ -1,8 +1,9 @@
 package io.thill.kafkacap.capture;
 
 import io.thill.kafkacap.capture.populator.DefaultRecordPopulator;
-import io.thill.kafkacap.clock.SettableClock;
-import io.thill.kafkacap.constant.RecordHeaderKeys;
+import io.thill.kafkacap.util.clock.SettableClock;
+import io.thill.kafkacap.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
 import net.openhft.chronicle.queue.RollCycles;
@@ -19,16 +20,16 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class TestQueuedPublisher {
+public class TestBufferedPublisher {
 
-  private static final String TOPIC = "TestQueuedPublisher";
+  private static final String TOPIC = "TestBufferedPublisher";
   private static final TopicPartition TOPIC_PARTITION = new TopicPartition(TOPIC, 0);
-  private static final String CHRONICLE_QUEUE_PATH = "/tmp/TestQueuedPublisher";
+  private static final String CHRONICLE_QUEUE_PATH = "/tmp/TestBufferedPublisher";
 
   private final SettableClock enqueueClock = new SettableClock();
   private final SettableClock populaterClock = new SettableClock();
 
-  private QueuedPublisher queuedPublisher;
+  private BufferedPublisher bufferedPublisher;
   private QueuedKafkaConsumer<String, String> kafkaConsumer;
 
   @Before
@@ -46,30 +47,21 @@ public class TestQueuedPublisher {
   }
 
   private void start() {
-    deleteRecursive(new File(CHRONICLE_QUEUE_PATH));
-    queuedPublisher = QueuedPublisher.builder()
+    FileUtil.deleteRecursive(new File(CHRONICLE_QUEUE_PATH));
+    bufferedPublisher = BufferedPublisher.builder()
             .chronicleQueuePath(CHRONICLE_QUEUE_PATH)
             .chronicleQueueRollCycle(RollCycles.TEST_SECONDLY)
             .clock(enqueueClock)
             .kafkaProducerProperties(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class))
             .recordPopulator(new DefaultRecordPopulator(TOPIC, 0, populaterClock))
             .build();
-    queuedPublisher.start();
-  }
-
-  private void deleteRecursive(File f) {
-    if(f.isDirectory()) {
-      for(File child : f.listFiles()) {
-        deleteRecursive(child);
-      }
-    }
-    f.delete();
+    bufferedPublisher.start();
   }
 
   private void stop() throws Exception {
-    if(queuedPublisher != null) {
-      queuedPublisher.close();
-      queuedPublisher = null;
+    if(bufferedPublisher != null) {
+      bufferedPublisher.close();
+      bufferedPublisher = null;
     }
   }
 
@@ -79,16 +71,15 @@ public class TestQueuedPublisher {
 
   @Test
   public void testMessageFlow() {
-    System.out.println("STARTING");
     start();
 
     populaterClock.set(3);
 
     enqueueClock.set(1);
-    queuedPublisher.write("M1".getBytes());
+    bufferedPublisher.write("M1".getBytes());
 
     enqueueClock.set(2);
-    queuedPublisher.write("M2".getBytes());
+    bufferedPublisher.write("M2".getBytes());
 
     ConsumerRecord<String, String> record1 = kafkaConsumer.poll();
     Assert.assertEquals("M1", record1.value());
@@ -109,7 +100,7 @@ public class TestQueuedPublisher {
 
     enqueueClock.set(1);
     populaterClock.set(3);
-    queuedPublisher.write("M1".getBytes());
+    bufferedPublisher.write("M1".getBytes());
 
     ConsumerRecord<String, String> record1 = kafkaConsumer.poll();
     Assert.assertEquals("M1", record1.value());
@@ -123,7 +114,7 @@ public class TestQueuedPublisher {
 
     enqueueClock.set(4);
     populaterClock.set(5);
-    queuedPublisher.write("M2".getBytes());
+    bufferedPublisher.write("M2".getBytes());
 
     ConsumerRecord<String, String> record2 = kafkaConsumer.poll();
     Assert.assertEquals("M2", record2.value());

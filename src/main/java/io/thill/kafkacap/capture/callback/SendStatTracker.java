@@ -1,7 +1,7 @@
 package io.thill.kafkacap.capture.callback;
 
-import io.thill.kafkacap.capture.QueuedPublisherBuilder;
-import io.thill.kafkacap.clock.Clock;
+import io.thill.kafkacap.capture.BufferedPublisherBuilder;
+import io.thill.kafkacap.util.clock.Clock;
 import io.thill.trakrj.Intervals;
 import io.thill.trakrj.Stats;
 import io.thill.trakrj.TrackerId;
@@ -9,7 +9,7 @@ import io.thill.trakrj.trackers.HistogramTracker;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 /**
- * Set as {@link QueuedPublisherBuilder#sendCompleteListener(SendCompleteListener)} to get <a href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram Stat
+ * Set as {@link BufferedPublisherBuilder#sendCompleteListener(SendCompleteListener)} to get <a href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram Stat
  * Tracking. Latency is measured from chronicleEnqueueTime to kafkaSendReturnedTime.
  */
 public class SendStatTracker implements SendCompleteListener {

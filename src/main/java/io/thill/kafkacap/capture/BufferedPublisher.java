@@ -1,10 +1,12 @@
 package io.thill.kafkacap.capture;
 
+import io.thill.kafkacap.capture.callback.MultiStoreFileListener;
 import io.thill.kafkacap.capture.callback.SendCompleteListener;
 import io.thill.kafkacap.capture.populator.RecordPopulator;
-import io.thill.kafkacap.clock.Clock;
+import io.thill.kafkacap.util.clock.Clock;
 import net.openhft.chronicle.queue.ExcerptAppender;
 import net.openhft.chronicle.queue.ExcerptTailer;
+import net.openhft.chronicle.queue.impl.StoreFileListener;
 import net.openhft.chronicle.queue.impl.single.SingleChronicleQueue;
 import org.agrona.concurrent.IdleStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -20,20 +22,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Eric Thill
  */
-public class QueuedPublisher implements Runnable, AutoCloseable {
+public class BufferedPublisher implements Runnable, AutoCloseable {
 
   /**
-   * Create a {@link QueuedPublisherBuilder}
+   * Create a {@link BufferedPublisherBuilder}
    *
-   * @return the {@link QueuedPublisherBuilder}
+   * @return the {@link BufferedPublisherBuilder}
    */
-  public static QueuedPublisherBuilder builder() {
-    return new QueuedPublisherBuilder();
+  public static BufferedPublisherBuilder builder() {
+    return new BufferedPublisherBuilder();
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final CountDownLatch closeComplete = new CountDownLatch(1);
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);
+  private final AtomicBoolean flushRequired = new AtomicBoolean(false);
 
   private final SingleChronicleQueue chronicleQueue;
   private final ExcerptAppender chronicleAppender;
@@ -44,12 +47,14 @@ public class QueuedPublisher implements Runnable, AutoCloseable {
   private final IdleStrategy idleStrategy;
   private final SendCompleteListener sendCompleteListener;
 
-  QueuedPublisher(final SingleChronicleQueue chronicleQueue,
-                  final RecordPopulator recordPopulator,
-                  final KafkaProducer<byte[], byte[]> kafkaProducer,
-                  final Clock clock,
-                  final IdleStrategy idleStrategy,
-                  final SendCompleteListener sendCompleteListener) {
+  private volatile CountDownLatch flushComplete;
+
+  BufferedPublisher(final SingleChronicleQueue chronicleQueue,
+                    final RecordPopulator recordPopulator,
+                    final KafkaProducer<byte[], byte[]> kafkaProducer,
+                    final Clock clock,
+                    final IdleStrategy idleStrategy,
+                    final SendCompleteListener sendCompleteListener) {
     this.chronicleQueue = chronicleQueue;
     this.chronicleAppender = chronicleQueue.acquireAppender();
     this.chronicleTailer = chronicleQueue.createTailer().toEnd();
@@ -61,7 +66,7 @@ public class QueuedPublisher implements Runnable, AutoCloseable {
   }
 
   /**
-   * Start the {@link QueuedPublisher#run()} loop in a new thread
+   * Start the {@link BufferedPublisher#run()} loop in a new thread
    */
   public void start() {
     new Thread(this, getClass().getSimpleName()).start();
@@ -72,22 +77,8 @@ public class QueuedPublisher implements Runnable, AutoCloseable {
     try {
       logger.info("Started");
       while(keepRunning.get()) {
-        if(chronicleTailer.readBytes(b -> {
-          // parse payload
-          final int length = b.readInt();
-          final long enqueueTime = b.readLong();
-          final byte[] payload = new byte[length];
-          b.read(payload);
-
-          // populate and send payload
-          final ProducerRecord<byte[], byte[]> record = recordPopulator.populate(payload, enqueueTime);
-          kafkaProducer.send(record);
-
-          // callback to SendCompleteListener: stats tracking, logging, etc
-          if(sendCompleteListener != null) {
-            sendCompleteListener.onSendComplete(record, enqueueTime);
-          }
-        })) {
+        checkFlush();
+        if(readFromChronicle()) {
           // did work: reset idle strategy
           idleStrategy.reset();
         } else {
@@ -106,6 +97,35 @@ public class QueuedPublisher implements Runnable, AutoCloseable {
       logger.info("Closed");
       closeComplete.countDown();
     }
+  }
+
+  private void checkFlush() {
+    if(flushRequired.get()) {
+      logger.info("Flushing...");
+      kafkaProducer.flush();
+      logger.info("Flush Complete");
+      flushRequired.set(false);
+      flushComplete.countDown();
+    }
+  }
+
+  private boolean readFromChronicle() {
+    return chronicleTailer.readBytes(b -> {
+      // parse payload
+      final int length = b.readInt();
+      final long enqueueTime = b.readLong();
+      final byte[] payload = new byte[length];
+      b.read(payload);
+
+      // populate and send payload
+      final ProducerRecord<byte[], byte[]> record = recordPopulator.populate(payload, enqueueTime);
+      kafkaProducer.send(record);
+
+      // callback to SendCompleteListener: stats tracking, logging, etc
+      if(sendCompleteListener != null) {
+        sendCompleteListener.onSendComplete(record, enqueueTime);
+      }
+    });
   }
 
   @Override
@@ -135,10 +155,21 @@ public class QueuedPublisher implements Runnable, AutoCloseable {
    */
   public void write(byte[] buffer, int offset, int length) {
     chronicleAppender.writeBytes(b -> {
-      b.writeInt(buffer.length);
+      b.writeInt(length);
       b.writeLong(clock.now());
       b.write(buffer, offset, length);
     });
+  }
+
+  /**
+   * Flush and block until complete
+   */
+  public synchronized void flush() {
+    // synchronized only with other flush calls
+    flushComplete = new CountDownLatch(1);
+    flushRequired.set(true);
+    flushComplete.countDown();
+    flushComplete = null;
   }
 
 }

@@ -1,4 +1,4 @@
-package io.thill.kafkacap.constant;
+package io.thill.kafkacap.util.constant;
 
 public class RecordHeaderKeys {
 

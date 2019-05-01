@@ -1,4 +1,4 @@
-package io.thill.kafkacap.clock;
+package io.thill.kafkacap.util.clock;
 
 public class SettableClock implements Clock {
   private volatile long now;
