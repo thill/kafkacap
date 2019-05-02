@@ -1,4 +1,6 @@
 package io.thill.kafkacap.dedup;
 
-public class Deduplicator {
+public class Deduplicator<K, V> {
+
+
 }
