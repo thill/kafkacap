@@ -42,6 +42,7 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
     } else if(ctx.startGapTimestamp != 0 && System.currentTimeMillis() > ctx.startGapTimestamp + sequenceGapTimeoutMillis) {
       // sequence gap timeout reached: set next sequence to next available sequence, which will be processed the next call to this method for the given partition
       logger.error("Sequence Gap Detected on Partition {}. Missing sequences {} through {}.", record.partition(), ctx.nextSequence, ctx.nextAvailableSequence - 1);
+      onSequenceGap(record.partition(), ctx.nextSequence, ctx.nextAvailableSequence - 1);
       ctx.nextSequence = ctx.nextAvailableSequence;
       ctx.nextAvailableSequence = -1;
       ctx.topicsAtNextAvailableSequence.clear();
@@ -62,6 +63,7 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
         if(ctx.topicsAtNextAvailableSequence.size() == numTopics) {
           // all topics are missing the same sequences, gap timeout is pointless, send it now and adjust context
           logger.info("All topics for partition {} are missing sequences {} through {}", record.partition(), ctx.nextSequence, ctx.nextAvailableSequence - 1);
+          onSequenceGap(record.partition(), ctx.nextSequence, ctx.nextAvailableSequence - 1);
           ctx.nextSequence = ctx.nextAvailableSequence + 1;
           ctx.nextAvailableSequence = -1;
           ctx.topicsAtNextAvailableSequence.clear();
@@ -73,7 +75,22 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
     }
   }
 
+  /**
+   * Parse the sequence from the record
+   *
+   * @param record The record to parse
+   * @return The parsed sequence
+   */
   protected abstract long parseSequence(ConsumerRecord<K, V> record);
+
+  /**
+   * Any special logic the implementing class may want to run on a sequence gap. Useful for alerting.
+   *
+   * @param partition    The partition
+   * @param fromSequence The first missing sequence (inclusive)
+   * @param toSequence   The last missing sequence (inclusive)
+   */
+  protected abstract void onSequenceGap(int partition, long fromSequence, long toSequence);
 
   @Override
   public final void assigned(Set<Integer> partitions, int numTopics) {

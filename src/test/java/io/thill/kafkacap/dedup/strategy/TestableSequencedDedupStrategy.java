@@ -6,6 +6,10 @@ import java.util.Set;
 
 public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<String, String> {
 
+  private Integer lastGapPartition;
+  private Long lastGapFromSequence;
+  private Long lastGapToSequence;
+
   public TestableSequencedDedupStrategy(long sequenceGapTimeoutMillis) {
     super(sequenceGapTimeoutMillis);
   }
@@ -13,6 +17,13 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Strin
   @Override
   protected long parseSequence(ConsumerRecord<String, String> record) {
     return Long.parseLong(record.key());
+  }
+
+  @Override
+  protected void onSequenceGap(int partition, long fromSequence, long toSequence) {
+    lastGapPartition = partition;
+    lastGapFromSequence = fromSequence;
+    lastGapToSequence = toSequence;
   }
 
   @Override
@@ -24,4 +35,17 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Strin
   protected void onRevoked(Set<Integer> partitions, int numTopics) {
 
   }
+
+  public Integer getLastGapPartition() {
+    return lastGapPartition;
+  }
+
+  public Long getLastGapFromSequence() {
+    return lastGapFromSequence;
+  }
+
+  public Long getLastGapToSequence() {
+    return lastGapToSequence;
+  }
+
 }

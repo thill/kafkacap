@@ -30,6 +30,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 1)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 2)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   @Test
@@ -38,6 +40,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 1)));
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_A, PARITION_0, 1)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 2)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   @Test
@@ -45,6 +49,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 100)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 101)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 102)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   @Test
@@ -71,6 +77,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_A, PARITION_0, 5)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 5)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   @Test
@@ -98,6 +106,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_C, PARITION_0, 3)));
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_C, PARITION_0, 4)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_C, PARITION_0, 5)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   @Test
@@ -125,6 +135,10 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_A, PARITION_0, 6)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_C, PARITION_0, 6)));
+
+    Assert.assertEquals(0, (int)strategy.getLastGapPartition());
+    Assert.assertEquals(2, (long)strategy.getLastGapFromSequence());
+    Assert.assertEquals(4, (long)strategy.getLastGapToSequence());
   }
 
   @Test
@@ -151,6 +165,10 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_B, PARITION_0, 5)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_A, PARITION_0, 5)));
+
+    Assert.assertEquals(0, (int)strategy.getLastGapPartition());
+    Assert.assertEquals(2, (long)strategy.getLastGapFromSequence());
+    Assert.assertEquals(4, (long)strategy.getLastGapToSequence());
   }
 
   @Test
@@ -162,6 +180,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_1, 0)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_1, 1)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_1, 2)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   @Test
@@ -213,6 +233,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_A, PARITION_0, 5)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 5)));
+
+    Assert.assertNull(strategy.getLastGapPartition());
   }
 
   private ConsumerRecord<String, String> record(String topic, int partition, long sequence) {
