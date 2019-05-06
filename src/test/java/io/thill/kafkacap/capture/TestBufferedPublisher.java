@@ -48,7 +48,7 @@ public class TestBufferedPublisher {
 
   private void start() {
     FileUtil.deleteRecursive(new File(CHRONICLE_QUEUE_PATH));
-    bufferedPublisher = BufferedPublisher.builder()
+    bufferedPublisher = new BufferedPublisherBuilder()
             .chronicleQueuePath(CHRONICLE_QUEUE_PATH)
             .chronicleQueueRollCycle(RollCycles.TEST_SECONDLY)
             .clock(enqueueClock)

@@ -24,15 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class BufferedPublisher implements Runnable, AutoCloseable {
 
-  /**
-   * Create a {@link BufferedPublisherBuilder}
-   *
-   * @return the {@link BufferedPublisherBuilder}
-   */
-  public static BufferedPublisherBuilder builder() {
-    return new BufferedPublisherBuilder();
-  }
-
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final CountDownLatch closeComplete = new CountDownLatch(1);
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);

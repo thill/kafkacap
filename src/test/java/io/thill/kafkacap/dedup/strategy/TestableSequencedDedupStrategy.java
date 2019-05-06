@@ -2,7 +2,7 @@ package io.thill.kafkacap.dedup.strategy;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.util.Set;
+import java.util.Collection;
 
 public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<String, String> {
 
@@ -27,12 +27,12 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Strin
   }
 
   @Override
-  protected void onAssigned(Set<Integer> partitions, int numTopics) {
+  protected void onAssigned(Collection<Integer> partitions, int numTopics) {
 
   }
 
   @Override
-  protected void onRevoked(Set<Integer> partitions, int numTopics) {
+  protected void onRevoked(Collection<Integer> partitions, int numTopics) {
 
   }
 

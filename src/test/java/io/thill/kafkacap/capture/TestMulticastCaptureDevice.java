@@ -53,7 +53,7 @@ public class TestMulticastCaptureDevice {
 
   private void start() throws Exception {
     FileUtil.deleteRecursive(new File(CHRONICLE_QUEUE_PATH));
-    BufferedPublisher bufferedPublisher = BufferedPublisher.builder()
+    BufferedPublisher bufferedPublisher = new BufferedPublisherBuilder()
             .chronicleQueuePath(CHRONICLE_QUEUE_PATH)
             .chronicleQueueRollCycle(RollCycles.TEST_SECONDLY)
             .clock(enqueueClock)

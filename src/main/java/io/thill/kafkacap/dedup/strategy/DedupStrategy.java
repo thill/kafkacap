@@ -2,12 +2,12 @@ package io.thill.kafkacap.dedup.strategy;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.util.Set;
+import java.util.Collection;
 
 public interface DedupStrategy<K, V> {
 
   /**
-   * Check if the given record should be sent, dropped, or checked again soon.
+   * Check if the given record should be sent, dropped, or added to a queue that will be checked again soon.
    *
    * @param record The record to check
    * @return sent, dropped, or checked again soon
@@ -20,7 +20,7 @@ public interface DedupStrategy<K, V> {
    * @param partitions
    * @param numTopics
    */
-  void assigned(Set<Integer> partitions, int numTopics);
+  void assigned(Collection<Integer> partitions, int numTopics);
 
   /**
    * Callback when partitions are unassigned
@@ -28,6 +28,6 @@ public interface DedupStrategy<K, V> {
    * @param partitions
    * @param numTopics
    */
-  void revoked(Set<Integer> partitions, int numTopics);
+  void revoked(Collection<Integer> partitions, int numTopics);
 
 }

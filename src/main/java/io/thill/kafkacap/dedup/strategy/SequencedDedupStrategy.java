@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -93,7 +94,7 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
   protected abstract void onSequenceGap(int partition, long fromSequence, long toSequence);
 
   @Override
-  public final void assigned(Set<Integer> partitions, int numTopics) {
+  public final void assigned(Collection<Integer> partitions, int numTopics) {
     logger.info("Assigned: {}", partitions);
     this.numTopics = numTopics;
     if(partitions.size() == 0) {
@@ -107,17 +108,17 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
     onAssigned(partitions, numTopics);
   }
 
-  protected abstract void onAssigned(Set<Integer> partitions, int numTopics);
+  protected abstract void onAssigned(Collection<Integer> partitions, int numTopics);
 
   @Override
-  public final void revoked(Set<Integer> partitions, int numTopics) {
+  public final void revoked(Collection<Integer> partitions, int numTopics) {
     logger.info("Revoked: {}", partitions);
     onRevoked(partitions, numTopics);
     this.numTopics = 0;
     this.partitionContexts = null;
   }
 
-  protected abstract void onRevoked(Set<Integer> partitions, int numTopics);
+  protected abstract void onRevoked(Collection<Integer> partitions, int numTopics);
 
   /**
    * Can be used during implementing class's recovery logic during the call to onAssigned
