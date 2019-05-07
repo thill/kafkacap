@@ -1,5 +1,6 @@
 package io.thill.kafkacap.dedup.queue;
 
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,20 +38,20 @@ public class MemoryDedupQueue<K, V> implements DedupQueue<K, V> {
   }
 
   @Override
-  public void assigned(Collection<Integer> partitions, int numTopics) {
-    logger.debug("Creating contexts for partitions {}", partitions);
-    if(partitions.size() == 0) {
+  public void assigned(Assignment<K, V> assignment) {
+    logger.debug("Creating contexts for partitions {}", assignment.getPartitions());
+    if(assignment.getPartitions().size() == 0) {
       partitionContexts = new PartitionContext[0];
     } else {
-      partitionContexts = new PartitionContext[Collections.max(partitions) + 1];
-      for(Integer partition : partitions) {
-        partitionContexts[partition] = new PartitionContext(numTopics);
+      partitionContexts = new PartitionContext[Collections.max(assignment.getPartitions()) + 1];
+      for(Integer partition : assignment.getPartitions()) {
+        partitionContexts[partition] = new PartitionContext(assignment.getNumTopics());
       }
     }
   }
 
   @Override
-  public void revoked(Collection<Integer> partitions, int numTopics) {
+  public void revoked() {
     logger.debug("Clearing State");
     partitionContexts = null;
   }

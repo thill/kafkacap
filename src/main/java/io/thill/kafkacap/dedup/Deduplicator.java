@@ -5,12 +5,12 @@ import io.thill.kafkacap.dedup.inbound.FollowConsumer;
 import io.thill.kafkacap.dedup.inbound.LeadConsumer;
 import io.thill.kafkacap.dedup.inbound.ThrottledDequeuer;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
+import io.thill.kafkacap.dedup.recovery.RecoveryService;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
@@ -24,18 +24,17 @@ public class Deduplicator<K, V> implements AutoCloseable {
 
   public Deduplicator(final String consumerGroupIdPrefix,
                       final Properties consumerProperties,
-                      final Collection<String> topics,
+                      final List<String> topics,
                       final RecordHandler<K, V> recordHandler,
-                      final RecordSender<K, V> sender) {
-    final List<String> sortedTopics = new ArrayList<>(topics);
-    sortedTopics.sort(String::compareTo);
+                      final RecordSender<K, V> sender,
+                      final RecoveryService recoveryService) {
     throttledDequeuer = new ThrottledDequeuer(recordHandler);
     followConsumers = new ArrayList<>();
-    for(int i = 1; i < sortedTopics.size(); i++) {
-      followConsumers.add(new FollowConsumer<>(createConsumerProperties(consumerGroupIdPrefix, i, consumerProperties), sortedTopics.get(i), i, recordHandler));
+    for(int i = 1; i < topics.size(); i++) {
+      followConsumers.add(new FollowConsumer<>(createConsumerProperties(consumerGroupIdPrefix, i, consumerProperties), topics.get(i), i, recordHandler));
     }
     leadConsumer = new LeadConsumer<>(createConsumerProperties(consumerGroupIdPrefix, 0, consumerProperties),
-            sortedTopics.get(0), 0, recordHandler, followConsumers, throttledDequeuer);
+            topics.get(0), 0, recordHandler, followConsumers, throttledDequeuer, recoveryService);
     this.sender = sender;
   }
 

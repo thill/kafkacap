@@ -48,9 +48,12 @@ public class TestDedeuplicator {
     consumer1 = new QueuedKafkaConsumer<>(new TopicPartition(DEDUP_TOPIC, PARTITION_1), KafkaLite.consumerProperties(StringDeserializer.class, StringDeserializer.class));
     producer = new KafkaProducer<>(KafkaLite.producerProperties(StringSerializer.class, StringSerializer.class));
 
+    startDeduplicator();
+  }
+
+  private void startDeduplicator() throws InterruptedException {
     Properties consumerProperties = KafkaLite.consumerProperties(StringDeserializer.class, StringDeserializer.class);
     Properties producerProperties = KafkaLite.producerProperties(StringSerializer.class, StringSerializer.class);
-
     deduplicator = new DeduplicatorBuilder<String, String>()
             .consumerGroupIdPrefix("test_group_")
             .consumerProperties(consumerProperties)
@@ -205,6 +208,55 @@ public class TestDedeuplicator {
     Assert.assertEquals("105", consumer0.poll().value());
 
     Assert.assertTrue(consumer0.isEmpty());
+  }
+
+  @Test
+  public void test_fault_tolerance() throws Exception {
+    sendAllTopics(PARTITION_0, 10000);
+    sendAllTopics(PARTITION_0, 10001);
+    sendAllTopics(PARTITION_0, 10002);
+
+    sendAllTopics(PARTITION_1, 100);
+    sendAllTopics(PARTITION_1, 101);
+    sendAllTopics(PARTITION_1, 102);
+
+    Assert.assertEquals("10000", consumer0.poll().value());
+    Assert.assertEquals("10001", consumer0.poll().value());
+    Assert.assertEquals("10002", consumer0.poll().value());
+
+    Assert.assertEquals("100", consumer1.poll().value());
+    Assert.assertEquals("101", consumer1.poll().value());
+    Assert.assertEquals("102", consumer1.poll().value());
+
+    Assert.assertTrue(consumer0.isEmpty());
+    Assert.assertTrue(consumer1.isEmpty());
+
+    // stop deduplicator
+    deduplicator.close();
+
+    // send some duplicate records and next records on partition 0 while down deduplicator is down
+    sendAllTopics(PARTITION_0, 10001);
+    sendAllTopics(PARTITION_0, 10002);
+    sendAllTopics(PARTITION_0, 10003);
+    sendAllTopics(PARTITION_0, 10004);
+    Thread.sleep(1000);
+
+    // start deduplicator
+    startDeduplicator();
+
+    // send next records after restarted
+    sendAllTopics(PARTITION_1, 103);
+    sendAllTopics(PARTITION_1, 104);
+    sendAllTopics(PARTITION_0, 10005);
+
+    // validate no duplicates were sent and stream recovered where it should
+    Assert.assertEquals("10003", consumer0.poll().value());
+    Assert.assertEquals("10004", consumer0.poll().value());
+    Assert.assertEquals("10005", consumer0.poll().value());
+
+    Assert.assertEquals("103", consumer1.poll().value());
+    Assert.assertEquals("104", consumer1.poll().value());
+
   }
 
 

@@ -1,14 +1,20 @@
 package io.thill.kafkacap.dedup;
 
+import io.thill.kafkacap.dedup.callback.DedupCompleteListener;
 import io.thill.kafkacap.dedup.handler.RecordHandler;
 import io.thill.kafkacap.dedup.handler.SynchronizedRecordHandler;
 import io.thill.kafkacap.dedup.outbound.KafkaRecordSender;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
 import io.thill.kafkacap.dedup.queue.DedupQueue;
 import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
+import io.thill.kafkacap.dedup.recovery.LastRecordRecoveryService;
+import io.thill.kafkacap.dedup.recovery.RecoveryService;
 import io.thill.kafkacap.dedup.strategy.DedupStrategy;
+import io.thill.kafkacap.util.clock.Clock;
+import io.thill.kafkacap.util.clock.SystemMillisClock;
+import org.apache.kafka.clients.producer.KafkaProducer;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
 
 public class DeduplicatorBuilder<K, V> {
@@ -16,10 +22,12 @@ public class DeduplicatorBuilder<K, V> {
   private String consumerGroupIdPrefix;
   private Properties consumerProperties;
   private Properties producerProperties;
-  private Collection<String> inboundTopics;
+  private List<String> inboundTopics;
   private String outboundTopic;
   private DedupStrategy<K, V> dedupStrategy;
   private DedupQueue<K, V> dedupQueue;
+  private Clock clock = new SystemMillisClock();
+  private DedupCompleteListener<K, V> dedupCompleteListener;
 
   /**
    * Set the Kafka Consumer group.id prefix
@@ -60,7 +68,7 @@ public class DeduplicatorBuilder<K, V> {
    * @param inboundTopics
    * @return
    */
-  public DeduplicatorBuilder<K, V> inboundTopics(Collection<String> inboundTopics) {
+  public DeduplicatorBuilder<K, V> inboundTopics(List<String> inboundTopics) {
     this.inboundTopics = inboundTopics;
     return this;
   }
@@ -98,6 +106,28 @@ public class DeduplicatorBuilder<K, V> {
     return this;
   }
 
+  /**
+   * The clock used for latency stats tracking. Defaults to {@link SystemMillisClock}
+   *
+   * @param clock
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> clock(Clock clock) {
+    this.clock = clock;
+    return this;
+  }
+
+  /**
+   * Optional. Listener to fire events after a {@link org.apache.kafka.clients.producer.ProducerRecord} has been dispatched to the {@link KafkaProducer}
+   *
+   * @param dedupCompleteListener
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> dedupCompleteListener(DedupCompleteListener<K, V> dedupCompleteListener) {
+    this.dedupCompleteListener = dedupCompleteListener;
+    return this;
+  }
+
   public Deduplicator<K, V> build() {
     if(consumerGroupIdPrefix == null)
       throw new IllegalArgumentException("consumerGroupIdPrefix cannot be null");
@@ -113,9 +143,13 @@ public class DeduplicatorBuilder<K, V> {
       throw new IllegalArgumentException("dedupStrategy cannot be null");
     if(dedupQueue == null)
       dedupQueue = new MemoryDedupQueue<>();
+    if(clock == null) {
+      throw new IllegalArgumentException("clock cannot be null");
+    }
 
     final RecordSender<K, V> sender = new KafkaRecordSender<>(producerProperties, outboundTopic);
-    final RecordHandler<K, V> recordHandler = new SynchronizedRecordHandler<>(dedupStrategy, dedupQueue, sender);
-    return new Deduplicator<>(consumerGroupIdPrefix, consumerProperties, inboundTopics, recordHandler, sender);
+    final RecordHandler<K, V> recordHandler = new SynchronizedRecordHandler<>(dedupStrategy, dedupQueue, sender, clock, dedupCompleteListener);
+    final RecoveryService recoveryService = new LastRecordRecoveryService(consumerProperties, outboundTopic, inboundTopics.size());
+    return new Deduplicator<>(consumerGroupIdPrefix, consumerProperties, inboundTopics, recordHandler, sender, recoveryService);
   }
 }

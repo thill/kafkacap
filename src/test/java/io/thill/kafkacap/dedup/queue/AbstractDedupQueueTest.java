@@ -1,6 +1,6 @@
 package io.thill.kafkacap.dedup.queue;
 
-import io.thill.kafkacap.dedup.queue.DedupQueue;
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,7 +25,7 @@ public abstract class AbstractDedupQueueTest {
   @Before
   public void setup() {
     queue = createQueue();
-    queue.assigned(new LinkedHashSet<>(Arrays.asList(PARTITION_0, PARTITION_1)), NUM_TOPICS);
+    queue.assigned(new Assignment<>(new LinkedHashSet<>(Arrays.asList(PARTITION_0, PARTITION_1)), NUM_TOPICS));
   }
 
   @Test

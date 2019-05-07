@@ -1,8 +1,7 @@
 package io.thill.kafkacap.dedup.handler;
 
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-
-import java.util.Collection;
 
 public interface RecordHandler<K, V> {
 
@@ -25,16 +24,12 @@ public interface RecordHandler<K, V> {
   /**
    * Callback when partitions are reassigned. This should be passed to the underlying {@link io.thill.kafkacap.dedup.strategy.DedupStrategy}.
    *
-   * @param partitions
-   * @param numTopics
+   * @param assignment
    */
-  void assigned(Collection<Integer> partitions, int numTopics);
+  void assigned(Assignment<K, V> assignment);
 
   /**
    * Callback when partitions are unassigned. This should be passed to the underlying {@link io.thill.kafkacap.dedup.strategy.DedupStrategy}.
-   *
-   * @param partitions
-   * @param numTopics
    */
-  void revoked(Collection<Integer> partitions, int numTopics);
+  void revoked();
 }

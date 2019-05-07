@@ -19,9 +19,15 @@ public class TestableRecordSender implements RecordSender<String, String> {
     return queue.isEmpty();
   }
 
+
+  @Override
+  public void open() {
+
+  }
+
   @Override
   public void close() {
-
+    queue.clear();
   }
 
   @Override

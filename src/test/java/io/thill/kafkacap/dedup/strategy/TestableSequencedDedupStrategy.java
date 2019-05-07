@@ -2,8 +2,6 @@ package io.thill.kafkacap.dedup.strategy;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.util.Collection;
-
 public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<String, String> {
 
   private Integer lastGapPartition;
@@ -24,16 +22,6 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Strin
     lastGapPartition = partition;
     lastGapFromSequence = fromSequence;
     lastGapToSequence = toSequence;
-  }
-
-  @Override
-  protected void onAssigned(Collection<Integer> partitions, int numTopics) {
-
-  }
-
-  @Override
-  protected void onRevoked(Collection<Integer> partitions, int numTopics) {
-
   }
 
   public Integer getLastGapPartition() {

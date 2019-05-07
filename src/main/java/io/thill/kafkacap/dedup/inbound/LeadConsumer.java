@@ -1,6 +1,8 @@
 package io.thill.kafkacap.dedup.inbound;
 
 import io.thill.kafkacap.dedup.handler.RecordHandler;
+import io.thill.kafkacap.dedup.assignment.Assignment;
+import io.thill.kafkacap.dedup.recovery.RecoveryService;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -29,19 +31,22 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   private final RecordHandler<K, V> handler;
   private final List<FollowConsumer<K, V>> followConsumers;
   private final ThrottledDequeuer throttledDequeuer;
+  private final RecoveryService<K, V> recoveryService;
 
   public LeadConsumer(Properties consumerProperties,
                       String topic,
                       int topicIdx,
                       RecordHandler<K, V> handler,
                       List<FollowConsumer<K, V>> followConsumers,
-                      ThrottledDequeuer throttledDequeuer) {
+                      ThrottledDequeuer throttledDequeuer,
+                      RecoveryService<K, V> recoveryService) {
     this.consumerProperties = consumerProperties;
     this.topic = topic;
     this.topicIdx = topicIdx;
     this.handler = handler;
     this.followConsumers = followConsumers;
     this.throttledDequeuer = throttledDequeuer;
+    this.recoveryService = recoveryService;
   }
 
   public void start() {
@@ -93,14 +98,14 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
       for(FollowConsumer fc : followConsumers) {
         try {
           logger.info("Revoking partitions {} from {}", partitions, fc);
-          fc.revoke(Collections.emptyList());
+          fc.revoke();
         } catch(InterruptedException e) {
           logger.error("Exception while assigning to " + fc, e);
         }
       }
 
       logger.info("Revoking partitions {} from {}", partitions, handler.getClass().getSimpleName());
-      handler.revoked(partitions, followConsumers.size() + 1);
+      handler.revoked();
 
       subscribed.set(false);
       logger.info("Revoke Complete");
@@ -111,8 +116,11 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
       final List<Integer> partitions = partitions(topicPartitions);
       logger.info("Partitions Assigned: {}", partitions);
 
+      logger.info("Recovering Inbound Offsets from Last Outbound Record Headers");
+      final Assignment<K, V> assignment = recoveryService.recover(partitions);
+
       logger.info("Assigning partitions {} to {}", partitions, handler.getClass().getSimpleName());
-      handler.assigned(partitions, followConsumers.size() + 1);
+      handler.assigned(assignment);
 
       try {
         logger.info("Assigning partitions {} to {}", partitions, throttledDequeuer);
@@ -124,7 +132,7 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
       for(FollowConsumer fc : followConsumers) {
         try {
           logger.info("Assigning partitions {} to {}", partitions, fc);
-          fc.assign(partitions);
+          fc.assign(partitions, assignment.getOffsets().topicOffsets(fc.getTopicIdx()));
         } catch(InterruptedException e) {
           logger.error("Exception while assigning to " + fc, e);
         }

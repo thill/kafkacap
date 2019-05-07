@@ -1,20 +1,31 @@
 package io.thill.kafkacap.dedup.strategy;
 
+import io.thill.kafkacap.dedup.assignment.Assignment;
+import io.thill.kafkacap.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.util.io.BitUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V> {
 
+  private static final long DEFAULT_SEQUENCE_GAP_MILLIS = Duration.ofSeconds(10).toMillis();
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final long sequenceGapTimeoutMillis;
   private PartitionContext[] partitionContexts;
   private int numTopics;
+
+  public SequencedDedupStrategy() {
+    this(DEFAULT_SEQUENCE_GAP_MILLIS);
+  }
 
   public SequencedDedupStrategy(long sequenceGapTimeoutMillis) {
     this.sequenceGapTimeoutMillis = sequenceGapTimeoutMillis;
@@ -76,6 +87,12 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
     }
   }
 
+  @Override
+  public void populateHeaders(ConsumerRecord<K, V> inboundRecord, RecordHeaders outboundHeaders) {
+    final long sequence = parseSequence(inboundRecord);
+    outboundHeaders.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE, BitUtil.longToBytes(sequence));
+  }
+
   /**
    * Parse the sequence from the record
    *
@@ -94,41 +111,34 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
   protected abstract void onSequenceGap(int partition, long fromSequence, long toSequence);
 
   @Override
-  public final void assigned(Collection<Integer> partitions, int numTopics) {
-    logger.info("Assigned: {}", partitions);
-    this.numTopics = numTopics;
-    if(partitions.size() == 0) {
+  public void assigned(Assignment<K, V> assignment) {
+    logger.info("Assigned: {}", assignment.getPartitions());
+    this.numTopics = assignment.getNumTopics();
+    if(assignment.getPartitions().size() == 0) {
       partitionContexts = new PartitionContext[0];
     } else {
-      partitionContexts = new PartitionContext[Collections.max(partitions) + 1];
-      for(Integer partition : partitions) {
+      partitionContexts = new PartitionContext[Collections.max(assignment.getPartitions()) + 1];
+      for(Integer partition : assignment.getPartitions()) {
         partitionContexts[partition] = new PartitionContext();
+        ConsumerRecord<K, V> lastRecord = assignment.getLastOutboundRecord(partition);
+        Header sequenceHeader = lastRecord != null ? lastRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE) : null;
+        if(sequenceHeader != null) {
+          final long nextSequence = 1 + BitUtil.bytesToLong(sequenceHeader.value());
+          logger.info("Partition {} recovered next sequence: {}", partition, nextSequence);
+          partitionContexts[partition].nextSequence = nextSequence;
+          partitionContexts[partition].nextSequenceNull = false;
+        } else {
+          logger.info("No sequence to recover");
+        }
       }
     }
-    onAssigned(partitions, numTopics);
   }
-
-  protected abstract void onAssigned(Collection<Integer> partitions, int numTopics);
 
   @Override
-  public final void revoked(Collection<Integer> partitions, int numTopics) {
-    logger.info("Revoked: {}", partitions);
-    onRevoked(partitions, numTopics);
+  public void revoked() {
+    logger.info("Revoked");
     this.numTopics = 0;
     this.partitionContexts = null;
-  }
-
-  protected abstract void onRevoked(Collection<Integer> partitions, int numTopics);
-
-  /**
-   * Can be used during implementing class's recovery logic during the call to onAssigned
-   *
-   * @param partition
-   * @param nextSequence
-   */
-  protected void setNextSequence(int partition, long nextSequence) {
-    partitionContexts[partition].nextSequence = nextSequence;
-    partitionContexts[partition].nextSequenceNull = false;
   }
 
   private static class PartitionContext {

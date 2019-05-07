@@ -8,22 +8,31 @@ import java.util.Properties;
 
 public class KafkaRecordSender<K, V> implements RecordSender<K, V> {
 
-  private final KafkaProducer<K, V> producer;
+  private final Properties producerProperties;
   private final String topic;
+  private KafkaProducer<K, V> producer;
 
   public KafkaRecordSender(Properties producerProperties, String topic) {
-    this.producer = new KafkaProducer<>(producerProperties);
+    this.producerProperties = producerProperties;
     this.topic = topic;
   }
 
   @Override
-  public void send(int partition, K key, V value, Headers headers) {
-    producer.send(new ProducerRecord<>(topic, partition, null, key, value));
+  public void open() {
+    producer = new KafkaProducer<>(producerProperties);
   }
 
   @Override
   public void close() {
-    producer.close();
+    if(producer != null) {
+      producer.close();
+      producer = null;
+    }
+  }
+
+  @Override
+  public void send(int partition, K key, V value, Headers headers) {
+    producer.send(new ProducerRecord<>(topic, partition, null, key, value, headers));
   }
 
   @Override

@@ -1,8 +1,7 @@
 package io.thill.kafkacap.dedup.queue;
 
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-
-import java.util.Collection;
 
 public interface DedupQueue<K, V> {
 
@@ -16,8 +15,8 @@ public interface DedupQueue<K, V> {
 
   ConsumerRecord<K, V> poll(int partition, int topicIdx);
 
-  void assigned(Collection<Integer> partitions, int numTopics);
+  void assigned(Assignment<K, V> assignment);
 
-  void revoked(Collection<Integer> partitions, int numTopics);
+  void revoked();
 
 }

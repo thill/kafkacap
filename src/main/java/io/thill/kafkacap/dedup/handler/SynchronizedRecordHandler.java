@@ -1,14 +1,21 @@
 package io.thill.kafkacap.dedup.handler;
 
+import io.thill.kafkacap.dedup.callback.DedupCompleteListener;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
 import io.thill.kafkacap.dedup.queue.DedupQueue;
+import io.thill.kafkacap.dedup.assignment.Assignment;
+import io.thill.kafkacap.dedup.recovery.PartitionOffsets;
 import io.thill.kafkacap.dedup.strategy.DedupResult;
 import io.thill.kafkacap.dedup.strategy.DedupStrategy;
+import io.thill.kafkacap.util.clock.Clock;
+import io.thill.kafkacap.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.util.io.BitUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collection;
 
 public class SynchronizedRecordHandler<K, V> implements RecordHandler<K, V> {
 
@@ -16,17 +23,29 @@ public class SynchronizedRecordHandler<K, V> implements RecordHandler<K, V> {
   private final DedupStrategy<K, V> dedupStrategy;
   private final DedupQueue<K, V> dedupQueue;
   private final RecordSender<K, V> sender;
+  private final Clock clock;
+  private final DedupCompleteListener<K, V> dedupCompleteListener;
   private int numTopics;
+  private PartitionOffsets offsets;
 
-  public SynchronizedRecordHandler(DedupStrategy<K, V> dedupStrategy, DedupQueue<K, V> dedupQueue, RecordSender<K, V> sender) {
+  public SynchronizedRecordHandler(DedupStrategy<K, V> dedupStrategy,
+                                   DedupQueue<K, V> dedupQueue,
+                                   RecordSender<K, V> sender,
+                                   Clock clock,
+                                   DedupCompleteListener<K, V> dedupCompleteListener) {
     this.dedupStrategy = dedupStrategy;
     this.dedupQueue = dedupQueue;
     this.sender = sender;
+    this.clock = clock;
+    this.dedupCompleteListener = dedupCompleteListener;
   }
 
   @Override
   public synchronized void handle(final ConsumerRecord<K, V> record, final int topicIdx) {
     logger.debug("Handling {}", record);
+
+    // update offset map
+    offsets.offset(record.partition(), topicIdx, record.offset());
 
     DedupResult result = dedupStrategy.check(record);
     switch(result) {
@@ -86,7 +105,22 @@ public class SynchronizedRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   private void send(final ConsumerRecord<K, V> record) {
-    sender.send(record.partition(), record.key(), record.value(), record.headers());
+    final RecordHeaders headers = headers(record.headers(), offsets);
+    dedupStrategy.populateHeaders(record, headers);
+    sender.send(record.partition(), record.key(), record.value(), headers);
+    if(dedupCompleteListener != null) {
+      dedupCompleteListener.onDedupComplete(record, headers);
+    }
+  }
+
+  private RecordHeaders headers(Headers inboundHeaders, PartitionOffsets offsets) {
+    final RecordHeaders headers = new RecordHeaders();
+    for(Header inboundHeader : inboundHeaders) {
+      headers.add(inboundHeader);
+    }
+    headers.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEND_TIME, BitUtil.longToBytes(clock.now()));
+    offsets.populateHeaders(headers);
+    return headers;
   }
 
   private void enqueue(final ConsumerRecord<K, V> record, final int topicIdx) {
@@ -97,16 +131,19 @@ public class SynchronizedRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
-  public synchronized void assigned(final Collection<Integer> partitions, final int numTopics) {
-    this.numTopics = numTopics;
-    dedupQueue.assigned(partitions, numTopics);
-    dedupStrategy.assigned(partitions, numTopics);
+  public synchronized void assigned(final Assignment<K, V> assignment) {
+    this.numTopics = assignment.getNumTopics();
+    this.offsets = assignment.getOffsets();
+    sender.open();
+    dedupQueue.assigned(assignment);
+    dedupStrategy.assigned(assignment);
   }
 
   @Override
-  public synchronized void revoked(final Collection<Integer> partitions, final int numTopics) {
-    dedupQueue.revoked(partitions, numTopics);
-    dedupStrategy.revoked(partitions, numTopics);
+  public synchronized void revoked() {
+    sender.close();
+    dedupQueue.revoked();
+    dedupStrategy.revoked();
   }
 
 }

@@ -23,7 +23,7 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);
   private final CountDownLatch closeComplete = new CountDownLatch(1);
-  private final AtomicReference<Collection<Integer>> nextAssignment = new AtomicReference<>();
+  private final AtomicReference<Assignment> nextAssignment = new AtomicReference<>();
 
   private final Properties consumerProperties;
   private final String topic;
@@ -60,12 +60,28 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
         }
 
         // check for new assignment
-        Collection<Integer> newAssignment = nextAssignment.getAndSet(null);
+        Assignment newAssignment = nextAssignment.getAndSet(null);
         if(newAssignment != null) {
-          currentAssignment = newAssignment;
-          consumer.assign(topicPartitions(newAssignment));
           logger.info("New Assignment: {}", newAssignment);
-          records = ConsumerRecords.empty(); // new assignment: drop records from prior poll
+
+          // new assignment: drop records from prior poll
+          records = ConsumerRecords.empty();
+
+          // assign new partitions
+          currentAssignment = newAssignment.partitions;
+          consumer.assign(topicPartitions(newAssignment.partitions));
+
+          // seek to recovered offset+1 for each partition
+          for(final int partition : currentAssignment) {
+            final Long recoveredOffset = newAssignment.partitionOffsets.get(partition);
+            if(recoveredOffset == null) {
+              logger.info("Seeking {} to beginning", topic, partition);
+              consumer.seekToBeginning(Arrays.asList(new TopicPartition(topic, partition)));
+            } else {
+              logger.info("Seeking {} to {}", topic, partition);
+              consumer.seek(new TopicPartition(topic, partition), recoveredOffset + 1);
+            }
+          }
         }
 
         if(!records.isEmpty()) {
@@ -97,20 +113,24 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
     closeComplete.await();
   }
 
-  public void assign(List<Integer> partitions) throws InterruptedException {
-    nextAssignment.set(partitions);
+  public void assign(List<Integer> partitions, Map<Integer, Long> partitionOffsets) throws InterruptedException {
+    nextAssignment.set(new Assignment(partitions, partitionOffsets));
     // block until assignment is accepted
     while(nextAssignment.get() != null) {
       Thread.sleep(ASSIGN_SLEEP_DURACTION.toMillis());
     }
   }
 
-  public void revoke(List<Integer> partitions) throws InterruptedException {
-    nextAssignment.set(Collections.emptyList());
+  public void revoke() throws InterruptedException {
+    nextAssignment.set(new Assignment(Collections.emptyList(), Collections.emptyMap()));
     // block until assignment is accepted
     while(nextAssignment.get() != null) {
       Thread.sleep(ASSIGN_SLEEP_DURACTION.toMillis());
     }
+  }
+
+  public int getTopicIdx() {
+    return topicIdx;
   }
 
   @Override
@@ -118,5 +138,23 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
     return "FollowConsumer{" +
             "topic='" + topic + '\'' +
             '}';
+  }
+
+  private static class Assignment {
+    private final Collection<Integer> partitions;
+    private final Map<Integer, Long> partitionOffsets;
+
+    public Assignment(Collection<Integer> partitions, Map<Integer, Long> partitionOffsets) {
+      this.partitions = partitions;
+      this.partitionOffsets = partitionOffsets;
+    }
+
+    @Override
+    public String toString() {
+      return "Assignment{" +
+              "partitions=" + partitions +
+              ", partitionOffsets=" + partitionOffsets +
+              '}';
+    }
   }
 }

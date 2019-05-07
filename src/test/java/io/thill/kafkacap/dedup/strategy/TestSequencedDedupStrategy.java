@@ -1,5 +1,6 @@
 package io.thill.kafkacap.dedup.strategy;
 
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,7 +23,7 @@ public class TestSequencedDedupStrategy {
   @Before
   public void setup() {
     strategy = new TestableSequencedDedupStrategy(1000);
-    strategy.assigned(new TreeSet<>(Arrays.asList(PARITION_0, PARITION_1)), 3);
+    strategy.assigned(new Assignment<>(new TreeSet<>(Arrays.asList(PARITION_0, PARITION_1)), 3));
   }
 
   @Test

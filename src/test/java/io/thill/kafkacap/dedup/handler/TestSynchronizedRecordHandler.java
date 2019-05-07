@@ -2,7 +2,9 @@ package io.thill.kafkacap.dedup.handler;
 
 import io.thill.kafkacap.dedup.handler.TestableRecordSender.TestRecord;
 import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy;
+import io.thill.kafkacap.util.clock.SystemMillisClock;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,8 +27,8 @@ public class TestSynchronizedRecordHandler {
   @Before
   public void setup() {
     sender = new TestableRecordSender();
-    handler = new SynchronizedRecordHandler<>(new TestableSequencedDedupStrategy(100), new MemoryDedupQueue<>(), sender);
-    handler.assigned(Arrays.asList(PARTITION_0, PARTITION_1), NUM_TOPICS);
+    handler = new SynchronizedRecordHandler<>(new TestableSequencedDedupStrategy(100), new MemoryDedupQueue<>(), sender, new SystemMillisClock(), null);
+    handler.assigned(new Assignment<>(Arrays.asList(PARTITION_0, PARTITION_1), NUM_TOPICS));
   }
 
   @Test
@@ -195,7 +197,7 @@ public class TestSynchronizedRecordHandler {
 
 
   private void handle(int partition, long sequence, int topicIdx) {
-    handler.handle(new ConsumerRecord<>("topic"+topicIdx, partition, 0, Long.toString(sequence), Long.toString(sequence)), topicIdx);
+    handler.handle(new ConsumerRecord<>("topic" + topicIdx, partition, 0, Long.toString(sequence), Long.toString(sequence)), topicIdx);
   }
 
 }

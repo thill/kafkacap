@@ -1,8 +1,8 @@
 package io.thill.kafkacap.dedup.strategy;
 
+import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-
-import java.util.Collection;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 
 public interface DedupStrategy<K, V> {
 
@@ -15,19 +15,23 @@ public interface DedupStrategy<K, V> {
   DedupResult check(ConsumerRecord<K, V> record);
 
   /**
+   * Optionally populate additional outbound headers
+   *
+   * @param inboundRecord
+   * @param outboundHeaders
+   */
+  void populateHeaders(ConsumerRecord<K, V> inboundRecord, RecordHeaders outboundHeaders);
+
+  /**
    * Callback when partitions are reassigned
    *
-   * @param partitions
-   * @param numTopics
+   * @param assignment
    */
-  void assigned(Collection<Integer> partitions, int numTopics);
+  void assigned(Assignment<K, V> assignment);
 
   /**
    * Callback when partitions are unassigned
-   *
-   * @param partitions
-   * @param numTopics
    */
-  void revoked(Collection<Integer> partitions, int numTopics);
+  void revoked();
 
 }
