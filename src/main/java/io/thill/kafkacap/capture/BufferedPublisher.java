@@ -1,12 +1,10 @@
 package io.thill.kafkacap.capture;
 
-import io.thill.kafkacap.capture.callback.MultiStoreFileListener;
 import io.thill.kafkacap.capture.callback.SendCompleteListener;
 import io.thill.kafkacap.capture.populator.RecordPopulator;
 import io.thill.kafkacap.util.clock.Clock;
 import net.openhft.chronicle.queue.ExcerptAppender;
 import net.openhft.chronicle.queue.ExcerptTailer;
-import net.openhft.chronicle.queue.impl.StoreFileListener;
 import net.openhft.chronicle.queue.impl.single.SingleChronicleQueue;
 import org.agrona.concurrent.IdleStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -22,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Eric Thill
  */
-public class BufferedPublisher implements Runnable, AutoCloseable {
+public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final CountDownLatch closeComplete = new CountDownLatch(1);
@@ -33,7 +31,7 @@ public class BufferedPublisher implements Runnable, AutoCloseable {
   private final ExcerptAppender chronicleAppender;
   private final ExcerptTailer chronicleTailer;
   private final RecordPopulator recordPopulator;
-  private final KafkaProducer<byte[], byte[]> kafkaProducer;
+  private final KafkaProducer<K, V> kafkaProducer;
   private final Clock clock;
   private final IdleStrategy idleStrategy;
   private final SendCompleteListener sendCompleteListener;
@@ -42,7 +40,7 @@ public class BufferedPublisher implements Runnable, AutoCloseable {
 
   BufferedPublisher(final SingleChronicleQueue chronicleQueue,
                     final RecordPopulator recordPopulator,
-                    final KafkaProducer<byte[], byte[]> kafkaProducer,
+                    final KafkaProducer<K, V> kafkaProducer,
                     final Clock clock,
                     final IdleStrategy idleStrategy,
                     final SendCompleteListener sendCompleteListener) {
@@ -109,7 +107,7 @@ public class BufferedPublisher implements Runnable, AutoCloseable {
       b.read(payload);
 
       // populate and send payload
-      final ProducerRecord<byte[], byte[]> record = recordPopulator.populate(payload, enqueueTime);
+      final ProducerRecord<K, V> record = recordPopulator.populate(payload, enqueueTime);
       kafkaProducer.send(record);
 
       // callback to SendCompleteListener: stats tracking, logging, etc

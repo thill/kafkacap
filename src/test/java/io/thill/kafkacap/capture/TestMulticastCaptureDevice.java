@@ -9,6 +9,7 @@ import io.thill.kafkalite.client.QueuedKafkaConsumer;
 import net.openhft.chronicle.queue.RollCycles;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.After;
@@ -34,7 +35,7 @@ public class TestMulticastCaptureDevice {
   private final SettableClock populaterClock = new SettableClock();
 
   private MulticastCaptureDevice device;
-  private QueuedKafkaConsumer<String, String> kafkaConsumer;
+  private QueuedKafkaConsumer<Void, String> kafkaConsumer;
   private MulticastSocket sendSocket;
 
   @Before
@@ -42,7 +43,7 @@ public class TestMulticastCaptureDevice {
     KafkaLite.cleanOnShutdown();
     KafkaLite.reset();
     KafkaLite.createTopic(TOPIC, 1);
-    kafkaConsumer = new QueuedKafkaConsumer<>(TOPIC_PARTITION, KafkaLite.consumerProperties(StringDeserializer.class, StringDeserializer.class));
+    kafkaConsumer = new QueuedKafkaConsumer<>(TOPIC_PARTITION, KafkaLite.consumerProperties(ByteArrayDeserializer.class, StringDeserializer.class));
   }
 
   @After
@@ -92,7 +93,7 @@ public class TestMulticastCaptureDevice {
     enqueueClock.set(1);
     send("M1".getBytes());
 
-    ConsumerRecord<String, String> record1 = kafkaConsumer.poll();
+    ConsumerRecord<Void, String> record1 = kafkaConsumer.poll();
     Assert.assertEquals("M1", record1.value());
     Assert.assertEquals(1, parseLongHeader(record1, RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME));
     Assert.assertEquals(3, parseLongHeader(record1, RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME));
@@ -100,7 +101,7 @@ public class TestMulticastCaptureDevice {
     enqueueClock.set(2);
     send("M2".getBytes());
 
-    ConsumerRecord<String, String> record2 = kafkaConsumer.poll();
+    ConsumerRecord<Void, String> record2 = kafkaConsumer.poll();
     Assert.assertEquals("M2", record2.value());
     Assert.assertEquals(2, parseLongHeader(record2, RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME));
     Assert.assertEquals(3, parseLongHeader(record2, RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME));

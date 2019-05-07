@@ -39,7 +39,7 @@ public class MulticastCaptureDevice implements Runnable, AutoCloseable {
     // instantiate and run
     logger.info("Building {}...", BufferedPublisher.class.getSimpleName());
     final Stats stats = Stats.create(new Slf4jStatLogger());
-    final BufferedPublisher bufferedPublisher = new BufferedPublisherBuilder()
+    final BufferedPublisher<Void, byte[]> bufferedPublisher = new BufferedPublisherBuilder<>()
             .config(config.getPublisher())
             .sendCompleteListener(new SendStatTracker(new SystemMillisClock(), stats, new ImmutableTrackerId(0, "total_time"), 10))
             .build();

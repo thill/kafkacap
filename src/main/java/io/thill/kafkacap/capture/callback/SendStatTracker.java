@@ -12,7 +12,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
  * Set as {@link BufferedPublisherBuilder#sendCompleteListener(SendCompleteListener)} to get <a href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram Stat
  * Tracking. Latency is measured from chronicleEnqueueTime to kafkaSendReturnedTime.
  */
-public class SendStatTracker implements SendCompleteListener {
+public class SendStatTracker<K, V> implements SendCompleteListener<K, V> {
 
   private final Clock clock;
   private final Stats stats;
@@ -29,7 +29,7 @@ public class SendStatTracker implements SendCompleteListener {
   }
 
   @Override
-  public void onSendComplete(ProducerRecord<byte[], byte[]> record, long enqueueTime) {
+  public void onSendComplete(ProducerRecord<K, V> record, long enqueueTime) {
     final long latency = clock.now() - enqueueTime;
     stats.record(trackerId, latency);
   }

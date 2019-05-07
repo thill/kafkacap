@@ -7,7 +7,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public class TestableRecordSender implements RecordSender<String, String> {
+public class TestableRecordSender implements RecordSender<Long, String> {
 
   private final BlockingQueue<TestRecord> queue = new LinkedBlockingQueue<>();
 
@@ -31,16 +31,16 @@ public class TestableRecordSender implements RecordSender<String, String> {
   }
 
   @Override
-  public void send(int partition, String key, String value, Headers headers) {
+  public void send(int partition, Long key, String value, Headers headers) {
     queue.add(new TestRecord(partition, key, value));
   }
 
   public static class TestRecord {
     private final int partition;
-    private final String key;
+    private final Long key;
     private final String value;
 
-    public TestRecord(int partition, String key, String value) {
+    public TestRecord(int partition, Long key, String value) {
       this.partition = partition;
       this.key = key;
       this.value = value;
@@ -50,7 +50,7 @@ public class TestableRecordSender implements RecordSender<String, String> {
       return partition;
     }
 
-    public String key() {
+    public Long key() {
       return key;
     }
 

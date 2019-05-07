@@ -39,13 +39,13 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
     if(ctx.nextSequenceNull) {
       // first sequence ever received for this topic, send it
       logger.info("First Sequence for Partition {}: {}", record.partition(), sequence);
-      ctx.nextSequence = sequence + 1;
+      ctx.nextSequence = sequence + parseSequenceDelta(record);
       ctx.startGapTimestamp = 0;
       ctx.nextSequenceNull = false;
       return DedupResult.SEND;
     } else if(sequence == ctx.nextSequence) {
       // message is the next expected sequence, send it
-      ctx.nextSequence++;
+      ctx.nextSequence += parseSequenceDelta(record);
       ctx.startGapTimestamp = 0;
       return DedupResult.SEND;
     } else if(Long.compareUnsigned(sequence, ctx.nextSequence) < 0) {
@@ -87,10 +87,22 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
     }
   }
 
+  /**
+   * Can be overwritten to process payloads that contain multiple sequence numbers
+   *
+   * @param record
+   * @return
+   */
+  protected long parseSequenceDelta(ConsumerRecord<K, V> record) {
+    return 1;
+  }
+
   @Override
   public void populateHeaders(ConsumerRecord<K, V> inboundRecord, RecordHeaders outboundHeaders) {
     final long sequence = parseSequence(inboundRecord);
+    final long sequenceDelta = parseSequenceDelta(inboundRecord);
     outboundHeaders.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE, BitUtil.longToBytes(sequence));
+    outboundHeaders.add(RecordHeaderKeys.HEADER_KEY_DEDUP_NUM_SEQUENCES, BitUtil.longToBytes(sequenceDelta));
   }
 
   /**
@@ -120,10 +132,11 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
       partitionContexts = new PartitionContext[Collections.max(assignment.getPartitions()) + 1];
       for(Integer partition : assignment.getPartitions()) {
         partitionContexts[partition] = new PartitionContext();
-        ConsumerRecord<K, V> lastRecord = assignment.getLastOutboundRecord(partition);
-        Header sequenceHeader = lastRecord != null ? lastRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE) : null;
+        final ConsumerRecord<K, V> lastRecord = assignment.getLastOutboundRecord(partition);
+        final Header sequenceHeader = lastRecord != null ? lastRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE) : null;
         if(sequenceHeader != null) {
-          final long nextSequence = 1 + BitUtil.bytesToLong(sequenceHeader.value());
+          final Header numSequencesHeader = lastRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_DEDUP_NUM_SEQUENCES);
+          final long nextSequence = BitUtil.bytesToLong(sequenceHeader.value()) + BitUtil.bytesToLong(numSequencesHeader.value());
           logger.info("Partition {} recovered next sequence: {}", partition, nextSequence);
           partitionContexts[partition].nextSequence = nextSequence;
           partitionContexts[partition].nextSequenceNull = false;

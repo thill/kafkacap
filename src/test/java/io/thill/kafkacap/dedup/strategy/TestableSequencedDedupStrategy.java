@@ -2,7 +2,7 @@ package io.thill.kafkacap.dedup.strategy;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<String, String> {
+public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Long, String> {
 
   private Integer lastGapPartition;
   private Long lastGapFromSequence;
@@ -13,8 +13,8 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Strin
   }
 
   @Override
-  protected long parseSequence(ConsumerRecord<String, String> record) {
-    return Long.parseLong(record.key());
+  protected long parseSequence(ConsumerRecord<Long, String> record) {
+    return record.key();
   }
 
   @Override

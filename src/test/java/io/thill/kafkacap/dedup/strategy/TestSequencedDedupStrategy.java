@@ -238,8 +238,8 @@ public class TestSequencedDedupStrategy {
     Assert.assertNull(strategy.getLastGapPartition());
   }
 
-  private ConsumerRecord<String, String> record(String topic, int partition, long sequence) {
-    return new ConsumerRecord<>(topic, partition, 0, Long.toString(sequence), Long.toString(sequence));
+  private ConsumerRecord<Long, String> record(String topic, int partition, long sequence) {
+    return new ConsumerRecord<>(topic, partition, 0, sequence, Long.toString(sequence));
   }
 
 }

@@ -7,5 +7,6 @@ public class RecordHeaderKeys {
   public static final String HEADER_KEY_DEDUP_SEND_TIME = "DDST";
   public static final String HEADER_KEY_DEDUP_OFFSET_PREFIX = "DDOFF_";
   public static final String HEADER_KEY_DEDUP_SEQUENCE = "DDSEQ";
+  public static final String HEADER_KEY_DEDUP_NUM_SEQUENCES = "DDNUM";
 
 }

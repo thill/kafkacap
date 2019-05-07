@@ -6,6 +6,8 @@ import io.thill.kafkalite.client.QueuedKafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.After;
@@ -30,10 +32,10 @@ public class TestDedeuplicator {
   private static final int GAP_TIMEOUT = 5000;
   private static final int WAIT_FOR_GAP_TIME = GAP_TIMEOUT * 2;
 
-  private Deduplicator<String, String> deduplicator;
+  private Deduplicator<Long, String> deduplicator;
   private QueuedKafkaConsumer<String, String> consumer0;
   private QueuedKafkaConsumer<String, String> consumer1;
-  private KafkaProducer<String, String> producer;
+  private KafkaProducer<Long, String> producer;
 
   @Before
   public void setup() throws Exception {
@@ -44,17 +46,17 @@ public class TestDedeuplicator {
     KafkaLite.createTopic(CAPTURE_TOPIC_C, NUM_PARTITIONS);
     KafkaLite.createTopic(DEDUP_TOPIC, NUM_PARTITIONS);
 
-    consumer0 = new QueuedKafkaConsumer<>(new TopicPartition(DEDUP_TOPIC, PARTITION_0), KafkaLite.consumerProperties(StringDeserializer.class, StringDeserializer.class));
-    consumer1 = new QueuedKafkaConsumer<>(new TopicPartition(DEDUP_TOPIC, PARTITION_1), KafkaLite.consumerProperties(StringDeserializer.class, StringDeserializer.class));
-    producer = new KafkaProducer<>(KafkaLite.producerProperties(StringSerializer.class, StringSerializer.class));
+    consumer0 = new QueuedKafkaConsumer<>(new TopicPartition(DEDUP_TOPIC, PARTITION_0), KafkaLite.consumerProperties(LongDeserializer.class, StringDeserializer.class));
+    consumer1 = new QueuedKafkaConsumer<>(new TopicPartition(DEDUP_TOPIC, PARTITION_1), KafkaLite.consumerProperties(LongDeserializer.class, StringDeserializer.class));
+    producer = new KafkaProducer<>(KafkaLite.producerProperties(LongSerializer.class, StringSerializer.class));
 
     startDeduplicator();
   }
 
   private void startDeduplicator() throws InterruptedException {
-    Properties consumerProperties = KafkaLite.consumerProperties(StringDeserializer.class, StringDeserializer.class);
-    Properties producerProperties = KafkaLite.producerProperties(StringSerializer.class, StringSerializer.class);
-    deduplicator = new DeduplicatorBuilder<String, String>()
+    Properties consumerProperties = KafkaLite.consumerProperties(LongDeserializer.class, StringDeserializer.class);
+    Properties producerProperties = KafkaLite.producerProperties(LongSerializer.class, StringSerializer.class);
+    deduplicator = new DeduplicatorBuilder<Long, String>()
             .consumerGroupIdPrefix("test_group_")
             .consumerProperties(consumerProperties)
             .producerProperties(producerProperties)
@@ -85,7 +87,7 @@ public class TestDedeuplicator {
   }
 
   private void send(String topic, int partition, long sequence) {
-    producer.send(new ProducerRecord<>(topic, partition, null, Long.toString(sequence), Long.toString(sequence)));
+    producer.send(new ProducerRecord<>(topic, partition, null, sequence, Long.toString(sequence)));
   }
 
   private void sendAllTopics(int partition, long sequence) {

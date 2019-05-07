@@ -8,9 +8,7 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class DefaultRecordPopulator implements RecordPopulator {
-
-  private static final byte[] EMPTY_BUFFER = new byte[0];
+public class DefaultRecordPopulator<K> implements RecordPopulator<K, byte[]> {
 
   private final String topic;
   private final int partition;
@@ -23,8 +21,8 @@ public class DefaultRecordPopulator implements RecordPopulator {
   }
 
   @Override
-  public ProducerRecord<byte[], byte[]> populate(byte[] payload, long enqueueTime) {
-    final byte[] key = key(payload, enqueueTime);
+  public ProducerRecord<K, byte[]> populate(byte[] payload, long enqueueTime) {
+    final K key = key(payload, enqueueTime);
     final byte[] value = value(payload, enqueueTime);
     final RecordHeaders headers = headers(payload, enqueueTime);
     return new ProducerRecord<>(topic, partition, key, value, headers);
@@ -37,8 +35,8 @@ public class DefaultRecordPopulator implements RecordPopulator {
     return headers;
   }
 
-  protected byte[] key(byte[] payload, long enqueueTime) {
-    return EMPTY_BUFFER;
+  protected K key(byte[] payload, long enqueueTime) {
+    return null;
   }
 
   protected byte[] value(byte[] payload, long enqueueTime) {

@@ -21,7 +21,7 @@ public class TestSynchronizedRecordHandler {
   private static final int TOPIC_2 = 2;
   private static final int NUM_TOPICS = 3;
 
-  private RecordHandler<String, String> handler;
+  private RecordHandler<Long, String> handler;
   private TestableRecordSender sender;
 
   @Before
@@ -197,7 +197,7 @@ public class TestSynchronizedRecordHandler {
 
 
   private void handle(int partition, long sequence, int topicIdx) {
-    handler.handle(new ConsumerRecord<>("topic" + topicIdx, partition, 0, Long.toString(sequence), Long.toString(sequence)), topicIdx);
+    handler.handle(new ConsumerRecord<>("topic" + topicIdx, partition, 0, sequence, Long.toString(sequence)), topicIdx);
   }
 
 }

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-public class BufferedPublisherBuilder {
+public class BufferedPublisherBuilder<K, V> {
 
   private String chronicleQueuePath;
   private RollCycle chronicleQueueRollCycle = RollCycles.MINUTELY;
@@ -31,8 +31,8 @@ public class BufferedPublisherBuilder {
   private boolean chronicleQueueCleanOnRoll;
   private boolean chronicleQueueCleanOnStartup;
   private SingleChronicleQueue chronicleQueue;
-  private RecordPopulator recordPopulator;
-  private KafkaProducer<byte[], byte[]> kafkaProducer;
+  private RecordPopulator<K, V> recordPopulator;
+  private KafkaProducer<K, V> kafkaProducer;
   private Properties kafkaProducerProperties;
   private Clock clock = new SystemMillisClock();
   private IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
@@ -44,7 +44,7 @@ public class BufferedPublisherBuilder {
    * @param config
    * @return
    */
-  public BufferedPublisherBuilder config(PublisherConfig config) {
+  public BufferedPublisherBuilder<K, V> config(PublisherConfig config) {
     if(config.getChronicle() != null) {
       if(config.getChronicle().getPath() != null)
         chronicleQueuePath(config.getChronicle().getPath());
@@ -70,7 +70,7 @@ public class BufferedPublisherBuilder {
    * @param chronicleQueuePath
    * @return
    */
-  public BufferedPublisherBuilder chronicleQueuePath(String chronicleQueuePath) {
+  public BufferedPublisherBuilder<K, V> chronicleQueuePath(String chronicleQueuePath) {
     this.chronicleQueuePath = chronicleQueuePath;
     return this;
   }
@@ -81,7 +81,7 @@ public class BufferedPublisherBuilder {
    * @param chronicleQueueRollCycle
    * @return
    */
-  public BufferedPublisherBuilder chronicleQueueRollCycle(RollCycle chronicleQueueRollCycle) {
+  public BufferedPublisherBuilder<K, V> chronicleQueueRollCycle(RollCycle chronicleQueueRollCycle) {
     this.chronicleQueueRollCycle = chronicleQueueRollCycle;
     return this;
   }
@@ -92,7 +92,7 @@ public class BufferedPublisherBuilder {
    * @param chronicleStoreFileListener
    * @return
    */
-  public BufferedPublisherBuilder chronicleStoreFileListener(StoreFileListener chronicleStoreFileListener) {
+  public BufferedPublisherBuilder<K, V> chronicleStoreFileListener(StoreFileListener chronicleStoreFileListener) {
     this.chronicleStoreFileListener = chronicleStoreFileListener;
     return this;
   }
@@ -104,7 +104,7 @@ public class BufferedPublisherBuilder {
    * @param chronicleQueueCleanOnRoll
    * @return
    */
-  public BufferedPublisherBuilder chronicleQueueCleanOnRoll(boolean chronicleQueueCleanOnRoll) {
+  public BufferedPublisherBuilder<K, V> chronicleQueueCleanOnRoll(boolean chronicleQueueCleanOnRoll) {
     this.chronicleQueueCleanOnRoll = chronicleQueueCleanOnRoll;
     return this;
   }
@@ -115,7 +115,7 @@ public class BufferedPublisherBuilder {
    * @param chronicleQueueCleanOnStartup
    * @return
    */
-  public BufferedPublisherBuilder chronicleQueueCleanOnStartup(boolean chronicleQueueCleanOnStartup) {
+  public BufferedPublisherBuilder<K, V> chronicleQueueCleanOnStartup(boolean chronicleQueueCleanOnStartup) {
     this.chronicleQueueCleanOnStartup = chronicleQueueCleanOnStartup;
     return this;
   }
@@ -127,7 +127,7 @@ public class BufferedPublisherBuilder {
    * @param chronicleQueue
    * @return
    */
-  public BufferedPublisherBuilder chronicleQueue(SingleChronicleQueue chronicleQueue) {
+  public BufferedPublisherBuilder<K, V> chronicleQueue(SingleChronicleQueue chronicleQueue) {
     this.chronicleQueue = chronicleQueue;
     return this;
   }
@@ -138,7 +138,7 @@ public class BufferedPublisherBuilder {
    * @param recordPopulator
    * @return
    */
-  public BufferedPublisherBuilder recordPopulator(RecordPopulator recordPopulator) {
+  public BufferedPublisherBuilder<K, V> recordPopulator(RecordPopulator<K, V> recordPopulator) {
     this.recordPopulator = recordPopulator;
     return this;
   }
@@ -149,7 +149,7 @@ public class BufferedPublisherBuilder {
    * @param kafkaProducerProperties
    * @return
    */
-  public BufferedPublisherBuilder kafkaProducerProperties(Properties kafkaProducerProperties) {
+  public BufferedPublisherBuilder<K, V> kafkaProducerProperties(Properties kafkaProducerProperties) {
     this.kafkaProducerProperties = kafkaProducerProperties;
     return this;
   }
@@ -160,7 +160,7 @@ public class BufferedPublisherBuilder {
    * @param kafkaProducerProperties
    * @return
    */
-  public BufferedPublisherBuilder kafkaProducerProperties(Map<String, String> kafkaProducerProperties) {
+  public BufferedPublisherBuilder<K, V> kafkaProducerProperties(Map<String, String> kafkaProducerProperties) {
     this.kafkaProducerProperties = new Properties();
     this.kafkaProducerProperties.putAll(kafkaProducerProperties);
     return this;
@@ -173,7 +173,7 @@ public class BufferedPublisherBuilder {
    * @param kafkaProducer
    * @return
    */
-  public BufferedPublisherBuilder kafkaProducer(KafkaProducer<byte[], byte[]> kafkaProducer) {
+  public BufferedPublisherBuilder<K, V> kafkaProducer(KafkaProducer<K, V> kafkaProducer) {
     this.kafkaProducer = kafkaProducer;
     return this;
   }
@@ -184,7 +184,7 @@ public class BufferedPublisherBuilder {
    * @param clock
    * @return
    */
-  public BufferedPublisherBuilder clock(Clock clock) {
+  public BufferedPublisherBuilder<K, V> clock(Clock clock) {
     this.clock = clock;
     return this;
   }
@@ -195,7 +195,7 @@ public class BufferedPublisherBuilder {
    * @param idleStrategy
    * @return
    */
-  public BufferedPublisherBuilder idleStrategy(IdleStrategy idleStrategy) {
+  public BufferedPublisherBuilder<K, V> idleStrategy(IdleStrategy idleStrategy) {
     this.idleStrategy = idleStrategy;
     return this;
   }
@@ -206,7 +206,7 @@ public class BufferedPublisherBuilder {
    * @param sendCompleteListener
    * @return
    */
-  public BufferedPublisherBuilder sendCompleteListener(SendCompleteListener sendCompleteListener) {
+  public BufferedPublisherBuilder<K, V> sendCompleteListener(SendCompleteListener sendCompleteListener) {
     this.sendCompleteListener = sendCompleteListener;
     return this;
   }
