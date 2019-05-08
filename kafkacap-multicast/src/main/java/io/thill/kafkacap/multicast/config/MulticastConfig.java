@@ -1,4 +1,4 @@
-package io.thill.kafkacap.capture.config;
+package io.thill.kafkacap.multicast.config;
 
 public class MulticastConfig {
   private String iface;

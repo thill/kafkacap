@@ -1,4 +1,6 @@
-package io.thill.kafkacap.capture.config;
+package io.thill.kafkacap.multicast.config;
+
+import io.thill.kafkacap.capture.config.PublisherConfig;
 
 public class MulticastCaptureDeviceConfig {
   private MulticastConfig receiver;

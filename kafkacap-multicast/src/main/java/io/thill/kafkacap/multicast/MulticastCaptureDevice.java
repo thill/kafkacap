@@ -3,7 +3,7 @@ package io.thill.kafkacap.multicast;
 import io.thill.kafkacap.capture.BufferedPublisher;
 import io.thill.kafkacap.capture.BufferedPublisherBuilder;
 import io.thill.kafkacap.capture.callback.SendStatTracker;
-import io.thill.kafkacap.capture.config.MulticastCaptureDeviceConfig;
+import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
 import io.thill.kafkacap.util.clock.SystemMillisClock;
 import io.thill.kafkacap.util.io.ResourceLoader;
 import io.thill.trakrj.Stats;
