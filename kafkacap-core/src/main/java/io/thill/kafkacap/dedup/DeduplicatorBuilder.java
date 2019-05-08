@@ -1,7 +1,11 @@
 package io.thill.kafkacap.dedup;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
+import com.lmax.disruptor.WaitStrategy;
 import io.thill.kafkacap.dedup.callback.DedupCompleteListener;
+import io.thill.kafkacap.dedup.handler.DisruptorRecordHandler;
 import io.thill.kafkacap.dedup.handler.RecordHandler;
+import io.thill.kafkacap.dedup.handler.SingleThreadRecordHandler;
 import io.thill.kafkacap.dedup.handler.SynchronizedRecordHandler;
 import io.thill.kafkacap.dedup.outbound.KafkaRecordSender;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
@@ -28,6 +32,9 @@ public class DeduplicatorBuilder<K, V> {
   private DedupQueue<K, V> dedupQueue;
   private Clock clock = new SystemMillisClock();
   private DedupCompleteListener<K, V> dedupCompleteListener;
+  private ConcurrencyMode concurrencyMode = ConcurrencyMode.DISRUPTOR;
+  private int disruptorRingBufferSize = 1024;
+  private WaitStrategy disruptorWaitStrategy;
 
   /**
    * Set the Kafka Consumer group.id prefix
@@ -128,6 +135,38 @@ public class DeduplicatorBuilder<K, V> {
     return this;
   }
 
+  /**
+   * Set the concurrency mode. Defaults to {@link ConcurrencyMode#DISRUPTOR}.
+   *
+   * @param concurrencyMode
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> concurrencyMode(ConcurrencyMode concurrencyMode) {
+    this.concurrencyMode = concurrencyMode;
+    return this;
+  }
+
+  /**
+   * Set the disruptor ringBuffer size. Defaults to 1024.
+   *
+   * @param disruptorRingBufferSize
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> disruptorRingBufferSize(int disruptorRingBufferSize) {
+    this.disruptorRingBufferSize = disruptorRingBufferSize;
+    return this;
+  }
+
+  /**
+   * Set the disruptor {@link WaitStrategy}. Defaults to {@link BlockingWaitStrategy}.
+   * @param disruptorWaitStrategy
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> disruptorWaitStrategy(WaitStrategy disruptorWaitStrategy) {
+    this.disruptorWaitStrategy = disruptorWaitStrategy;
+    return this;
+  }
+
   public Deduplicator<K, V> build() {
     if(consumerGroupIdPrefix == null)
       throw new IllegalArgumentException("consumerGroupIdPrefix cannot be null");
@@ -143,13 +182,32 @@ public class DeduplicatorBuilder<K, V> {
       throw new IllegalArgumentException("dedupStrategy cannot be null");
     if(dedupQueue == null)
       dedupQueue = new MemoryDedupQueue<>();
-    if(clock == null) {
+    if(clock == null)
       throw new IllegalArgumentException("clock cannot be null");
-    }
+    if(concurrencyMode == null)
+      throw new IllegalArgumentException("concurrencyMode cannot be null");
+
 
     final RecordSender<K, V> sender = new KafkaRecordSender<>(producerProperties, outboundTopic);
-    final RecordHandler<K, V> recordHandler = new SynchronizedRecordHandler<>(dedupStrategy, dedupQueue, sender, clock, dedupCompleteListener);
+    final RecordHandler<K,V> underlyingRecordHandler = new SingleThreadRecordHandler<>(dedupStrategy, dedupQueue, sender, clock, dedupCompleteListener);
     final RecoveryService recoveryService = new LastRecordRecoveryService(consumerProperties, outboundTopic, inboundTopics.size());
-    return new Deduplicator<>(consumerGroupIdPrefix, consumerProperties, inboundTopics, recordHandler, sender, recoveryService);
+
+    RecordHandler<K, V> recordHandler;
+    if(concurrencyMode == ConcurrencyMode.DISRUPTOR) {
+      if(disruptorWaitStrategy == null) {
+        disruptorWaitStrategy = new BlockingWaitStrategy();
+      }
+      recordHandler = new DisruptorRecordHandler<>(underlyingRecordHandler, disruptorRingBufferSize, disruptorWaitStrategy);
+    } else if(concurrencyMode == ConcurrencyMode.SYNCHRONIZED) {
+      recordHandler = new SynchronizedRecordHandler<>(underlyingRecordHandler);
+    } else {
+      throw new IllegalArgumentException("Unrecognized concurrencyMode: " + concurrencyMode);
+    }
+
+    return new Deduplicator<>(consumerGroupIdPrefix, consumerProperties, inboundTopics, recordHandler, recoveryService);
+  }
+
+  public enum ConcurrencyMode {
+    SYNCHRONIZED, DISRUPTOR
   }
 }

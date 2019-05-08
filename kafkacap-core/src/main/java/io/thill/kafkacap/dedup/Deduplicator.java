@@ -20,13 +20,12 @@ public class Deduplicator<K, V> implements AutoCloseable {
   private final ThrottledDequeuer throttledDequeuer;
   private final List<FollowConsumer<K, V>> followConsumers;
   private final LeadConsumer<K, V> leadConsumer;
-  private final RecordSender<K, V> sender;
+  private final RecordHandler<K,V> recordHandler;
 
   public Deduplicator(final String consumerGroupIdPrefix,
                       final Properties consumerProperties,
                       final List<String> topics,
                       final RecordHandler<K, V> recordHandler,
-                      final RecordSender<K, V> sender,
                       final RecoveryService recoveryService) {
     throttledDequeuer = new ThrottledDequeuer(recordHandler);
     followConsumers = new ArrayList<>();
@@ -35,7 +34,7 @@ public class Deduplicator<K, V> implements AutoCloseable {
     }
     leadConsumer = new LeadConsumer<>(createConsumerProperties(consumerGroupIdPrefix, 0, consumerProperties),
             topics.get(0), 0, recordHandler, followConsumers, throttledDequeuer, recoveryService);
-    this.sender = sender;
+    this.recordHandler = recordHandler;
   }
 
   private static Properties createConsumerProperties(String consumerGroupIdPrefix, int topicIdx, Properties baseProperties) {
@@ -73,8 +72,8 @@ public class Deduplicator<K, V> implements AutoCloseable {
     logger.info("Closing {}", throttledDequeuer);
     tryClose(throttledDequeuer);
 
-    logger.info("Closing {}", sender);
-    tryClose(sender);
+    logger.info("Closing {}", recordHandler);
+    tryClose(recordHandler);
 
     logger.info("Close Complete");
   }

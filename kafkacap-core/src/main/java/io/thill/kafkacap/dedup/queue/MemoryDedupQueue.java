@@ -13,6 +13,16 @@ public class MemoryDedupQueue<K, V> implements DedupQueue<K, V> {
   private PartitionContext[] partitionContexts;
 
   @Override
+  public void start() {
+
+  }
+
+  @Override
+  public void close() throws Exception {
+    partitionContexts = null;
+  }
+
+  @Override
   public void add(int partition, int topicIdx, ConsumerRecord<K, V> record) {
     partitionContexts[partition].add(topicIdx, record);
   }

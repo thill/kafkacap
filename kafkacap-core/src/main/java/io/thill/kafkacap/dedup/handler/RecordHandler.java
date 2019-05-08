@@ -3,7 +3,9 @@ package io.thill.kafkacap.dedup.handler;
 import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public interface RecordHandler<K, V> {
+public interface RecordHandler<K, V> extends AutoCloseable {
+
+  void start();
 
   /**
    * Handle the given record

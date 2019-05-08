@@ -3,7 +3,9 @@ package io.thill.kafkacap.dedup.queue;
 import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-public interface DedupQueue<K, V> {
+public interface DedupQueue<K, V> extends AutoCloseable {
+
+  void start();
 
   void add(int partition, int topicIdx, ConsumerRecord<K, V> record);
 

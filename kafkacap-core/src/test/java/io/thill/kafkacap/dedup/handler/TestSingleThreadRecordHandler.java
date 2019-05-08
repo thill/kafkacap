@@ -5,13 +5,13 @@ import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
 import io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy;
 import io.thill.kafkacap.util.clock.SystemMillisClock;
 
-public class TestSynchronizedRecordHandler extends AbstractRecordHandlerTest {
+public class TestSingleThreadRecordHandler extends AbstractRecordHandlerTest {
 
   @Override
   protected RecordHandler<Long, String> createRecordHandler(RecordSender<Long, String> sender) {
-    return new SynchronizedRecordHandler<>(new SingleThreadRecordHandler<>(
+    return new SingleThreadRecordHandler<>(
             new TestableSequencedDedupStrategy(100), new MemoryDedupQueue<>(), sender, new SystemMillisClock(), null
-    ));
+    );
   }
 
 }
