@@ -23,7 +23,7 @@
 hs_err_pid*
 
 # maven
-/target/
+*/target/
 
 # IntelliJ
 /.idea/workspace.xml

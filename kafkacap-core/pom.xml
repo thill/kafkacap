@@ -2,14 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.thill.kafkacap</groupId>
-    <artifactId>kafkacap-parent</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-
-    <name>KafkaCap</name>
-    <description>Reliably Capture Messages to Kafka</description>
-    <url>https://github.com/thillio/kafkacap</url>
+    <parent>
+        <groupId>io.thill.kafkacap</groupId>
+        <artifactId>kafkacap-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>kafkacap-core</artifactId>
 
     <licenses>
         <license>
@@ -18,50 +16,77 @@
         </license>
     </licenses>
 
-    <developers>
-        <developer>
-            <name>Eric Thill</name>
-            <email>code@thill.io</email>
-            <url>http://thill.io</url>
-            <timezone>-6</timezone>
-            <roles>
-                <role>developer</role>
-            </roles>
-        </developer>
-    </developers>
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${version.slf4j}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.thill.trakrj</groupId>
+            <artifactId>trakrj</artifactId>
+            <version>0.10.2</version>
+        </dependency>
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-queue</artifactId>
+            <version>5.17.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.12</artifactId>
+            <version>2.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.agrona</groupId>
+            <artifactId>agrona</artifactId>
+            <version>0.9.35</version>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.24</version>
+        </dependency>
 
-    <scm>
-        <url>https://github.com/thillio/kafkacap</url>
-        <connection>scm:git:git@github.com:thillio/kafkacap.git</connection>
-        <developerConnection>scm:git:git@github.com:thillio/kafkacap.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-    
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <name>Maven Central Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <name>Maven Central Staging Repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
-    <properties>
-        <version.slf4j>1.7.25</version.slf4j>
-    </properties>
-
-    <modules>
-        <module>kafkacap-core</module>
-        <module>kafkacap-multicast</module>
-        <module>kafkacap-aeron</module>
-    </modules>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${version.slf4j}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.thill.kafkalite</groupId>
+            <artifactId>kafka-lite</artifactId>
+            <version>0.9.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
