@@ -1,6 +1,8 @@
 package io.thill.kafkacap.capture.config;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class KafkaConfig {
   private Map<String, String> producer;
@@ -13,6 +15,13 @@ public class KafkaConfig {
 
   public void setProducer(Map<String, String> producer) {
     this.producer = producer;
+  }
+
+  public void setProducer(Properties producer) {
+    this.producer = new LinkedHashMap<>();
+    for(Map.Entry<Object, Object> e : producer.entrySet()) {
+      this.producer.put(e.getKey().toString(), e.getValue().toString());
+    }
   }
 
   public String getTopic() {

@@ -1,10 +1,9 @@
 package io.thill.kafkacap.multicast.config;
 
-import io.thill.kafkacap.capture.config.PublisherConfig;
+import io.thill.kafkacap.capture.config.CaptureDeviceConfig;
 
-public class MulticastCaptureDeviceConfig {
+public class MulticastCaptureDeviceConfig extends CaptureDeviceConfig {
   private MulticastConfig receiver;
-  private PublisherConfig publisher;
 
   public MulticastConfig getReceiver() {
     return receiver;
@@ -14,19 +13,12 @@ public class MulticastCaptureDeviceConfig {
     this.receiver = receiver;
   }
 
-  public PublisherConfig getPublisher() {
-    return publisher;
-  }
-
-  public void setPublisher(PublisherConfig publisher) {
-    this.publisher = publisher;
-  }
-
   @Override
   public String toString() {
     return "MulticastCaptureDeviceConfig{" +
             "receiver=" + receiver +
-            ", publisher=" + publisher +
+            ", chronicle=" + getChronicle() +
+            ", kafka=" + getKafka() +
             '}';
   }
 }

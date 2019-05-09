@@ -1,6 +1,6 @@
 package io.thill.kafkacap.capture.config;
 
-public class PublisherConfig {
+public class CaptureDeviceConfig {
   private ChronicleConfig chronicle;
   private KafkaConfig kafka;
 
@@ -22,7 +22,7 @@ public class PublisherConfig {
 
   @Override
   public String toString() {
-    return "PublisherConfig{" +
+    return "CaptureDeviceConfig{" +
             "chronicle=" + chronicle +
             ", kafka=" + kafka +
             '}';

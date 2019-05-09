@@ -2,10 +2,8 @@ package io.thill.kafkacap.capture;
 
 import io.thill.kafkacap.capture.callback.SendCompleteListener;
 import io.thill.kafkacap.capture.populator.RecordPopulator;
+import io.thill.kafkacap.capture.queue.CaptureQueue;
 import io.thill.kafkacap.util.clock.Clock;
-import net.openhft.chronicle.queue.ExcerptAppender;
-import net.openhft.chronicle.queue.ExcerptTailer;
-import net.openhft.chronicle.queue.impl.single.SingleChronicleQueue;
 import org.agrona.concurrent.IdleStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -16,7 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Buffers messages to disk using <a href="https://github.com/OpenHFT/Chronicle-Queue">Chronicle-Queue</a> then publishes them to Kafka
+ * Buffers messages using a {@link CaptureQueue} implementation then publishes them to Kafka. Instantiate using {@link BufferedPublisherBuilder}.
  *
  * @author Eric Thill
  */
@@ -27,9 +25,7 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);
   private final AtomicBoolean flushRequired = new AtomicBoolean(false);
 
-  private final SingleChronicleQueue chronicleQueue;
-  private final ExcerptAppender chronicleAppender;
-  private final ExcerptTailer chronicleTailer;
+  private final CaptureQueue captureQueue;
   private final RecordPopulator recordPopulator;
   private final KafkaProducer<K, V> kafkaProducer;
   private final Clock clock;
@@ -38,15 +34,13 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
 
   private volatile CountDownLatch flushComplete;
 
-  BufferedPublisher(final SingleChronicleQueue chronicleQueue,
+  BufferedPublisher(final CaptureQueue captureQueue,
                     final RecordPopulator recordPopulator,
                     final KafkaProducer<K, V> kafkaProducer,
                     final Clock clock,
                     final IdleStrategy idleStrategy,
                     final SendCompleteListener sendCompleteListener) {
-    this.chronicleQueue = chronicleQueue;
-    this.chronicleAppender = chronicleQueue.acquireAppender();
-    this.chronicleTailer = chronicleQueue.createTailer().toEnd();
+    this.captureQueue = captureQueue;
     this.recordPopulator = recordPopulator;
     this.kafkaProducer = kafkaProducer;
     this.clock = clock;
@@ -67,7 +61,7 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
       logger.info("Started");
       while(keepRunning.get()) {
         checkFlush();
-        if(readFromChronicle()) {
+        if(captureQueue.poll(this::send)) {
           // did work: reset idle strategy
           idleStrategy.reset();
         } else {
@@ -79,8 +73,8 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
       logger.error("Encountered Exception", t);
     } finally {
       logger.info("Closing...");
-      logger.info("Closing Chronicle Queue...");
-      chronicleQueue.close();
+      logger.info("Closing {}...", captureQueue.getClass().getSimpleName());
+      captureQueue.close();
       logger.info("Closing Kafka Producer...");
       kafkaProducer.close();
       logger.info("Closed");
@@ -98,23 +92,15 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
     }
   }
 
-  private boolean readFromChronicle() {
-    return chronicleTailer.readBytes(b -> {
-      // parse payload
-      final int length = b.readInt();
-      final long enqueueTime = b.readLong();
-      final byte[] payload = new byte[length];
-      b.read(payload);
+  private void send(byte[] payload, long enqueueTime) {
+    // populate and send payload
+    final ProducerRecord<K, V> record = recordPopulator.populate(payload, enqueueTime);
+    kafkaProducer.send(record);
 
-      // populate and send payload
-      final ProducerRecord<K, V> record = recordPopulator.populate(payload, enqueueTime);
-      kafkaProducer.send(record);
-
-      // callback to SendCompleteListener: stats tracking, logging, etc
-      if(sendCompleteListener != null) {
-        sendCompleteListener.onSendComplete(record, enqueueTime);
-      }
-    });
+    // callback to SendCompleteListener: stats tracking, logging, etc
+    if(sendCompleteListener != null) {
+      sendCompleteListener.onSendComplete(record, enqueueTime);
+    }
   }
 
   @Override
@@ -127,27 +113,23 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
   }
 
   /**
-   * Write the entirety of the given buffer as a single payload
+   * Write the entirety of the given buffer as a single payload. The buffer reference is released immediately.
    *
    * @param buffer The payload buffer
    */
   public void write(byte[] buffer) {
-    write(buffer, 0, buffer.length);
+    captureQueue.add(buffer, clock.now());
   }
 
   /**
-   * Write a range of the given buffer as a single payload
+   * Write a range of the given buffer as a single payload.  The buffer reference is released immediately.
    *
    * @param buffer The payload buffer
    * @param offset The start offset in the buffer
    * @param length The size of the payload
    */
   public void write(byte[] buffer, int offset, int length) {
-    chronicleAppender.writeBytes(b -> {
-      b.writeInt(length);
-      b.writeLong(clock.now());
-      b.write(buffer, offset, length);
-    });
+    captureQueue.add(buffer, offset, length, clock.now());
   }
 
   /**

@@ -1,6 +1,7 @@
 package io.thill.kafkacap.capture;
 
 import io.thill.kafkacap.capture.populator.DefaultRecordPopulator;
+import io.thill.kafkacap.capture.queue.MemoryCaptureQueue;
 import io.thill.kafkacap.util.clock.SettableClock;
 import io.thill.kafkacap.util.constant.RecordHeaderKeys;
 import io.thill.kafkacap.util.io.FileUtil;
@@ -49,8 +50,7 @@ public class TestBufferedPublisher {
   private void start() {
     FileUtil.deleteRecursive(new File(CHRONICLE_QUEUE_PATH));
     bufferedPublisher = new BufferedPublisherBuilder()
-            .chronicleQueuePath(CHRONICLE_QUEUE_PATH)
-            .chronicleQueueRollCycle(RollCycles.TEST_SECONDLY)
+            .captureQueue(new MemoryCaptureQueue())
             .clock(enqueueClock)
             .kafkaProducerProperties(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class))
             .recordPopulator(new DefaultRecordPopulator(TOPIC, 0, populaterClock))
