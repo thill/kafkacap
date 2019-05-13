@@ -1,12 +1,14 @@
 package io.thill.kafkacap.multicast;
 
 import io.thill.kafkalite.KafkaLite;
+import org.agrona.concurrent.SigInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MulticastDemo {
 
@@ -28,7 +30,9 @@ public class MulticastDemo {
         sendSocket.setInterface(InetAddress.getLocalHost());
         sendSocket.setTimeToLive(1);
         long sequence = 0;
-        while(true) {
+        final AtomicBoolean keepRunning = new AtomicBoolean(true);
+        SigInt.register(() -> keepRunning.set(false));
+        while(keepRunning.get()) {
           Thread.sleep(1000);
           String message = "Hello World " + (sequence++);
           LOGGER.info("Sending: {}", message);
