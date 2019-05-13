@@ -1,0 +1,14 @@
+consumerGroupIdPrefix: demo_
+consumer:
+  bootstrap.servers: "localhost:9092"
+  key.deserializer: "org.apache.kafka.common.serialization.LongDeserializer"
+  value.deserializer: "org.apache.kafka.common.serialization.StringDeserializer"
+producer:
+  bootstrap.servers: "localhost:9092"
+  key.serializer: "org.apache.kafka.common.serialization.LongSerializer"
+  value.serializer: "org.apache.kafka.common.serialization.StringSerializer"
+inboundTopics:
+  - "capture_A"
+  - "capture_B"
+outboundTopic: "outbound"
+dedupStrategy: "io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy"

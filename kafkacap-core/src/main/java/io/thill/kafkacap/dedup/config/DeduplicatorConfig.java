@@ -46,7 +46,7 @@ public class DeduplicatorConfig {
 
   public Properties getProducerProperties() {
     Properties props = new Properties();
-    props.putAll(props);
+    props.putAll(producer);
     return props;
   }
 

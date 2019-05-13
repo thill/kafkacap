@@ -23,9 +23,10 @@ public class MulticastDemo {
   public static void main(String... args) throws Exception {
     // TODO test IDE demo on non-MacOS operating systems
 
-    KafkaLite.reset();
     KafkaLite.cleanOnShutdown();
+    KafkaLite.reset();
     KafkaLite.createTopic("capture_topic_1", 1);
+    SigInt.register(() -> KafkaLite.stop());
 
     // send multicast message every second
     new Thread(() -> {

@@ -12,6 +12,7 @@ import io.thill.trakrj.Stats;
 import io.thill.trakrj.TrackerId;
 import io.thill.trakrj.trackers.HistogramTracker;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 
 /**
@@ -47,8 +48,11 @@ public class DedupStatTracker<K, V> implements DedupCompleteListener<K, V> {
 
   @Override
   public void onDedupComplete(ConsumerRecord<K, V> consumerRecord, Headers producerHeaders) {
-    final long captureQueueTime = BitUtil.bytesToLong(consumerRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME).value());
-    final long latency = clock.now() - captureQueueTime;
-    stats.record(trackerId, latency);
+    Header header = consumerRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME);
+    if(header != null) {
+      final long captureQueueTime = BitUtil.bytesToLong(header.value());
+      final long latency = clock.now() - captureQueueTime;
+      stats.record(trackerId, latency);
+    }
   }
 }

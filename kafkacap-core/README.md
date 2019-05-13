@@ -59,3 +59,27 @@ As far as the deduplicator is concerend, inboundPartition == outboundPartition, 
 The Deduplicator relies on Kafka Consumer Groups for fault tolerance. Since it consumes multiple inbound topics which must be deduplicated, the first topic in the `inboundTopics` list is used for topic subscription / partition assignment. Upon partition assignment for this first topic from the Kafka Cluster, all other topics will be manually assigned to match the same partition assignment. This allows multi-partition schemes to be load balanced between all available deduplicator processes in the consumer group. 
 
 ![Multi-Partition](docs/kafkacap_multi_partition.png "Multi-Partition")
+
+## Running
+```
+io.thill.kafkacap.core.Deduplicator /path/to/config.yaml
+```
+
+## Configuration
+
+```
+consumerGroupIdPrefix: demo_
+consumer:
+  bootstrap.servers: "localhost:9092"
+  key.deserializer: "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+  value.deserializer: "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+producer:
+  bootstrap.servers: "localhost:9092"
+  key.serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
+  value.serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
+inboundTopics:
+  - "capture_A"
+  - "capture_B"
+outboundTopic: "outbound"
+dedupStrategy: "io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy"
+```

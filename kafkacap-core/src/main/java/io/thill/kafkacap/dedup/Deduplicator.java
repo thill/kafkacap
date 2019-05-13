@@ -169,7 +169,7 @@ public class Deduplicator<K, V> implements AutoCloseable {
             .inboundTopics(config.getInboundTopics())
             .dedupStrategy(dedupStrategy)
             .dedupQueue(new MemoryDedupQueue<>())
-            .dedupCompleteListener(new DedupStatTracker<>(clock, stats, TrackerId.generate("latency"), 10000))
+            .dedupCompleteListener(new DedupStatTracker<>(clock, stats, TrackerId.generate("latency"), 10))
             .clock(clock)
             .build();
     logger.info("Registering SigInt Handler...");
