@@ -6,8 +6,18 @@ package io.thill.kafkacap.util.io;
 
 import java.io.File;
 
+/**
+ * Utility methods for dealing with files
+ *
+ * @author Eric Thill
+ */
 public class FileUtil {
 
+  /**
+   * Recursively delete a file or directory
+   *
+   * @param f The file or directory to recursively delete
+   */
   public static void deleteRecursive(File f) {
     if(f.isDirectory()) {
       for(File child : f.listFiles()) {

@@ -4,6 +4,11 @@
  */
 package io.thill.kafkacap.util.clock;
 
+/**
+ * A @{@link Clock} implementation that uses {@link System#currentTimeMillis()}
+ *
+ * @author Eric Thill
+ */
 public class SystemMillisClock implements Clock {
   @Override
   public long now() {

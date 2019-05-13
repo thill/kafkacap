@@ -4,6 +4,9 @@
  */
 package io.thill.kafkacap.util.constant;
 
+/**
+ * Common keys for Kafka {@link org.apache.kafka.common.header.Headers}
+ */
 public class RecordHeaderKeys {
 
   public static final String HEADER_KEY_CAPTURE_QUEUE_TIME = "CAPQT";
