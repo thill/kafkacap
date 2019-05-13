@@ -65,15 +65,14 @@ public class PartitionOffsets {
   }
 
   /**
-   * Use the internal state to populate record headers
+   * Use the internal state for the given partition to populate record headers
    *
-   * @param headers The headers to populate
+   * @param headers   The headers to populate
+   * @param partition The partition to lookup to populate headers
    */
-  public void populateHeaders(RecordHeaders headers) {
-    for(int i = 0; i < offsetsPerPartition.length; i++) {
-      if(offsetsPerPartition[i] != null) {
-        offsetsPerPartition[i].populateHeaders(headers);
-      }
+  public void populateHeaders(RecordHeaders headers, int partition) {
+    if(offsetsPerPartition[partition] != null) {
+      offsetsPerPartition[partition].populateHeaders(headers);
     }
   }
 

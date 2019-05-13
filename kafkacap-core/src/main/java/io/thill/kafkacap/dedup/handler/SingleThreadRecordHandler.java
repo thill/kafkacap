@@ -137,7 +137,7 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   private void send(final ConsumerRecord<K, V> record) {
-    final RecordHeaders headers = headers(record.headers(), offsets);
+    final RecordHeaders headers = headers(record.headers(), offsets, record.partition());
     dedupStrategy.populateHeaders(record, headers);
     sender.send(record.partition(), record.key(), record.value(), headers);
     if(dedupCompleteListener != null) {
@@ -145,13 +145,13 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
     }
   }
 
-  private RecordHeaders headers(Headers inboundHeaders, PartitionOffsets offsets) {
+  private RecordHeaders headers(Headers inboundHeaders, PartitionOffsets offsets, int partition) {
     final RecordHeaders headers = new RecordHeaders();
     for(Header inboundHeader : inboundHeaders) {
       headers.add(inboundHeader);
     }
     headers.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEND_TIME, BitUtil.longToBytes(clock.now()));
-    offsets.populateHeaders(headers);
+    offsets.populateHeaders(headers, partition);
     return headers;
   }
 

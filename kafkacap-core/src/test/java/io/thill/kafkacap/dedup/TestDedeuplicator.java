@@ -262,9 +262,6 @@ public class TestDedeuplicator {
 
     Assert.assertEquals("103", consumer1.poll().value());
     Assert.assertEquals("104", consumer1.poll().value());
-
   }
-
-
 
 }

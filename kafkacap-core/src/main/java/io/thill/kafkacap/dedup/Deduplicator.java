@@ -69,9 +69,12 @@ public class Deduplicator<K, V> implements AutoCloseable {
   }
 
   /**
-   * Start the underlying resources
+   * Start the underlying consumers/handlers/dequeuer
    */
   public void start() {
+    logger.info("Starting {}", recordHandler);
+    recordHandler.start();
+
     logger.info("Starting {}", throttledDequeuer);
     throttledDequeuer.start();
 
@@ -82,6 +85,8 @@ public class Deduplicator<K, V> implements AutoCloseable {
 
     logger.info("Starting {}", leadConsumer);
     leadConsumer.start();
+
+    logger.info("Started");
   }
 
   @Override
