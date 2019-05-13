@@ -11,11 +11,21 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
+/**
+ * {@link StoreFileListener} that automatically deletes files once they are released
+ *
+ * @author Eric Thill
+ */
 public class AutoCleanupChronicleListener implements StoreFileListener {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final BufferedPublisher publisher;
 
+  /**
+   * AutoCleanupChronicleListener Constructor
+   *
+   * @param publisher The underlying {@link BufferedPublisher} to be flushed prior to chronicle file deletion
+   */
   public AutoCleanupChronicleListener(BufferedPublisher publisher) {
     this.publisher = publisher;
   }

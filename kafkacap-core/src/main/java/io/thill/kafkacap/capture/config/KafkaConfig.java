@@ -8,6 +8,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * The Kafka portion of a {@link CaptureDeviceConfig}
+ *
+ * @author Eric Thill
+ */
 public class KafkaConfig {
   private Map<String, String> producer;
   private String topic;

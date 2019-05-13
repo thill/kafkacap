@@ -45,6 +45,11 @@ public abstract class CaptureDevice implements Runnable, AutoCloseable {
   private final CaptureDeviceConfig config;
   private final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
+  /**
+   * CaptureDevice Constructor
+   *
+   * @param config The configuration for the {@link CaptureDevice}
+   */
   public CaptureDevice(CaptureDeviceConfig config) {
     this.config = config;
   }

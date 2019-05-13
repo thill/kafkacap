@@ -13,8 +13,8 @@ import io.thill.trakrj.trackers.HistogramTracker;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 /**
- * Set as {@link BufferedPublisherBuilder#sendCompleteListener(SendCompleteListener)} to get <a href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram Stat
- * Tracking. Latency is measured from chronicleEnqueueTime to kafkaSendReturnedTime.
+ * Set as {@link BufferedPublisherBuilder#sendCompleteListener(SendCompleteListener)} to get <a href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram
+ * Stat Tracking. Latency is measured from chronicleEnqueueTime to kafkaSendReturnedTime.
  */
 public class SendStatTracker<K, V> implements SendCompleteListener<K, V> {
 
@@ -22,6 +22,14 @@ public class SendStatTracker<K, V> implements SendCompleteListener<K, V> {
   private final Stats stats;
   private final TrackerId trackerId;
 
+  /**
+   * SendStatTracker Constructor
+   *
+   * @param clock           The clock to use for timestamps
+   * @param stats           The underlying stats instance to use for statistic records
+   * @param trackerId       The tracker ID to use for latency stats
+   * @param intervalSeconds The number of seconds of sampling between stat logging
+   */
   public SendStatTracker(final Clock clock,
                          final Stats stats,
                          final TrackerId trackerId,

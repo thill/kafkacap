@@ -8,14 +8,27 @@ import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * Buffers messages to memory using an underling {@link BlockingQueue}
+ *
+ * @author Eric Thill
+ */
 public class MemoryCaptureQueue implements CaptureQueue {
 
   private final BlockingQueue<QueueElement> queue;
 
+  /**
+   * Instantiate using an unbound {@link LinkedBlockingQueue}
+   */
   public MemoryCaptureQueue() {
     this(new LinkedBlockingQueue<>());
   }
 
+  /**
+   * Instantiate using the given {@link BlockingQueue}
+   *
+   * @param queue The underling queue
+   */
   public MemoryCaptureQueue(BlockingQueue<QueueElement> queue) {
     this.queue = queue;
   }

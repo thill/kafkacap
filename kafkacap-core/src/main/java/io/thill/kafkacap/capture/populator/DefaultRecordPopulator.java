@@ -12,12 +12,25 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Default implementation of a {@link RecordPopulator} that copies the inbound byte[] payload to the outbound {@link ProducerRecord} value.
+ *
+ * @param <K> The {@link ProducerRecord} key time.
+ * @author Eric Thill
+ */
 public class DefaultRecordPopulator<K> implements RecordPopulator<K, byte[]> {
 
   private final String topic;
   private final int partition;
   private final Clock clock;
 
+  /**
+   * DefaultRecordPopulator constructor
+   *
+   * @param topic     The topic to apply to all populated records
+   * @param partition The partition to apply to all populated records
+   * @param clock     The clock to use for header timestamps
+   */
   public DefaultRecordPopulator(String topic, int partition, Clock clock) {
     this.topic = topic;
     this.partition = partition;

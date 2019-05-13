@@ -20,6 +20,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A builder for a {@link BufferedPublisher}
+ *
+ * @param <K> The {@link org.apache.kafka.clients.producer.ProducerRecord} key type ( typically byte[] )
+ * @param <V> The {@link org.apache.kafka.clients.producer.ProducerRecord} value type ( typically byte[] )
+ */
 public class BufferedPublisherBuilder<K, V> {
 
   private CaptureQueue captureQueue;

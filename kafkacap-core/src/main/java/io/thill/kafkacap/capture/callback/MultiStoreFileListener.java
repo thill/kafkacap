@@ -10,10 +10,20 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * {@link StoreFileListener} that forwards all callbacks to a list of underlying {@link StoreFileListener}s
+ *
+ * @author Eric Thill
+ */
 public class MultiStoreFileListener implements StoreFileListener {
 
   private final List<StoreFileListener> listeners = new ArrayList<>();
 
+  /**
+   * Add a listener to the listener list
+   *
+   * @param listener The listener
+   */
   public void addListener(StoreFileListener listener) {
     this.listeners.add(listener);
   }

@@ -4,6 +4,11 @@
  */
 package io.thill.kafkacap.capture.config;
 
+/**
+ * A configuration object for a {@link io.thill.kafkacap.capture.CaptureDevice}
+ *
+ * @author Eric Thill
+ */
 public class CaptureDeviceConfig {
   private ChronicleConfig chronicle;
   private KafkaConfig kafka;

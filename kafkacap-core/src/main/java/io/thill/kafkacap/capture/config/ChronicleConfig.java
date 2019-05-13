@@ -6,6 +6,11 @@ package io.thill.kafkacap.capture.config;
 
 import net.openhft.chronicle.queue.RollCycles;
 
+/**
+ * The Chronicle portion of a {@link CaptureDeviceConfig}
+ *
+ * @author Eric Thill
+ */
 public class ChronicleConfig {
   private String path;
   private RollCycles rollCycle;

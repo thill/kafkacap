@@ -19,6 +19,11 @@ public class ChronicleCaptureQueue implements CaptureQueue {
   private final ExcerptAppender chronicleAppender;
   private final ExcerptTailer chronicleTailer;
 
+  /**
+   * ChronicleCaptureQueue Constructor
+   *
+   * @param chronicleQueue The underling Chronicle Queue
+   */
   public ChronicleCaptureQueue(final SingleChronicleQueue chronicleQueue) {
     this.chronicleQueue = chronicleQueue;
     this.chronicleAppender = chronicleQueue.acquireAppender();
