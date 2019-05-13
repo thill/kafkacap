@@ -28,7 +28,7 @@ public class QueueCaptureDevice extends CaptureDevice {
     config.setChronicle(chronicle);
 
     KafkaConfig kafka = new KafkaConfig();
-    kafka.setProducer(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class));
+    kafka.setProducerProperties(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class));
     kafka.setTopic(topic);
     kafka.setPartition(partition);
     config.setKafka(kafka);

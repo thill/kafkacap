@@ -7,8 +7,8 @@ import java.util.Properties;
 public class DeduplicatorConfig {
 
   private String consumerGroupIdPrefix;
-  private Map<String, String> consumerProperties;
-  private Map<String, String> producerProperties;
+  private Map<String, String> consumer;
+  private Map<String, String> producer;
   private List<String> inboundTopics;
   private String outboundTopic;
   private String dedupStrategy;
@@ -23,22 +23,30 @@ public class DeduplicatorConfig {
 
   public Properties getConsumerProperties() {
     Properties props = new Properties();
-    props.putAll(consumerProperties);
+    props.putAll(consumer);
     return props;
   }
 
-  public void setConsumerProperties(Map<String, String> consumerProperties) {
-    this.consumerProperties = consumerProperties;
+  public Map<String, String> getConsumer() {
+    return consumer;
+  }
+
+  public void setConsumer(Map<String, String> consumer) {
+    this.consumer = consumer;
   }
 
   public Properties getProducerProperties() {
     Properties props = new Properties();
-    props.putAll(producerProperties);
+    props.putAll(props);
     return props;
   }
 
-  public void setProducerProperties(Map<String, String> producerProperties) {
-    this.producerProperties = producerProperties;
+  public Map<String, String> getProducer() {
+    return producer;
+  }
+
+  public void setProducer(Map<String, String> producer) {
+    this.producer = producer;
   }
 
   public List<String> getInboundTopics() {
@@ -69,8 +77,8 @@ public class DeduplicatorConfig {
   public String toString() {
     return "DeduplicatorConfig{" +
             "consumerGroupIdPrefix='" + consumerGroupIdPrefix + '\'' +
-            ", consumerProperties=" + consumerProperties +
-            ", producerProperties=" + producerProperties +
+            ", consumer=" + consumer +
+            ", producer=" + producer +
             ", inboundTopics=" + inboundTopics +
             ", outboundTopic='" + outboundTopic + '\'' +
             ", dedupStrategy='" + dedupStrategy + '\'' +

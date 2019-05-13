@@ -17,7 +17,7 @@ public class KafkaConfig {
     this.producer = producer;
   }
 
-  public void setProducer(Properties producer) {
+  public void setProducerProperties(Properties producer) {
     this.producer = new LinkedHashMap<>();
     for(Map.Entry<Object, Object> e : producer.entrySet()) {
       this.producer.put(e.getKey().toString(), e.getValue().toString());
