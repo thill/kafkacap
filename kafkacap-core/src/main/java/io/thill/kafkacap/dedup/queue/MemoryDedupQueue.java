@@ -11,6 +11,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+/**
+ * An implementation of a {@link DedupQueue} that queues in-memory on-heap
+ *
+ * @param <K> The record key type
+ * @param <V> The record value type
+ * @author Eric Thill
+ */
 public class MemoryDedupQueue<K, V> implements DedupQueue<K, V> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -72,11 +79,13 @@ public class MemoryDedupQueue<K, V> implements DedupQueue<K, V> {
 
   private static class PartitionContext<K, V> {
     private final List<Queue<ConsumerRecord<K, V>>> topicQueues = new ArrayList<>();
+
     public PartitionContext(int numTopics) {
       for(int i = 0; i < numTopics; i++) {
         topicQueues.add(new LinkedList<>());
       }
     }
+
     public boolean isEmpty() {
       for(int i = 0; i < topicQueues.size(); i++) {
         if(!topicQueues.get(i).isEmpty())
@@ -84,15 +93,19 @@ public class MemoryDedupQueue<K, V> implements DedupQueue<K, V> {
       }
       return true;
     }
+
     public boolean isEmpty(int topicIdx) {
       return topicQueues.get(topicIdx).isEmpty();
     }
+
     public void add(int topicIdx, ConsumerRecord<K, V> record) {
       topicQueues.get(topicIdx).add(record);
     }
+
     public ConsumerRecord<K, V> peek(int topicIdx) {
       return topicQueues.get(topicIdx).peek();
     }
+
     public ConsumerRecord<K, V> poll(int topicIdx) {
       return topicQueues.get(topicIdx).poll();
     }

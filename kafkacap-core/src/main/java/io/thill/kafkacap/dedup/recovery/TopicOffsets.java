@@ -9,6 +9,9 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 
 import java.util.Arrays;
 
+/**
+ * @author Eric Thill
+ */
 class TopicOffsets {
 
   private TopicOffset[] topicOffsets = new TopicOffset[0];

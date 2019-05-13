@@ -21,6 +21,14 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * An implementation of a {@link RecordHandler} that handles flow between the {@link DedupStrategy}, {@link DedupQueue}, and {@link RecordSender}, but is not
+ * thread-safe. It is meant to be encapsulated by a thread-safe implementation.
+ *
+ * @param <K> The kafka record key type
+ * @param <V> The kafka record value type
+ * @author Eric Thill
+ */
 public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -32,6 +40,15 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
   private int numTopics;
   private PartitionOffsets offsets;
 
+  /**
+   * SingleThreadRecordHandler Constructor
+   *
+   * @param dedupStrategy         The dedup strategy
+   * @param dedupQueue            The dedup queue
+   * @param sender                The record sender
+   * @param clock                 The clock
+   * @param dedupCompleteListener Optional dedup complete callback
+   */
   public SingleThreadRecordHandler(DedupStrategy<K, V> dedupStrategy,
                                    DedupQueue<K, V> dedupQueue,
                                    RecordSender<K, V> sender,

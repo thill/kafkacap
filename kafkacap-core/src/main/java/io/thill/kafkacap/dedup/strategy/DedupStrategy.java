@@ -8,6 +8,13 @@ import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
+/**
+ * A strategy that ultimately decides how messages are deduplicated
+ *
+ * @param <K> kafka record key type
+ * @param <V> kafka record value type
+ * @author Eric Thill
+ */
 public interface DedupStrategy<K, V> {
 
   /**

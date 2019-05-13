@@ -25,6 +25,12 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * Build a {@link Deduplicator}
+ *
+ * @param <K> Kafka record key type
+ * @param <V> Kafka record value type
+ */
 public class DeduplicatorBuilder<K, V> {
 
   private String consumerGroupIdPrefix;
@@ -163,6 +169,7 @@ public class DeduplicatorBuilder<K, V> {
 
   /**
    * Set the disruptor {@link WaitStrategy}. Defaults to {@link BlockingWaitStrategy}.
+   *
    * @param disruptorWaitStrategy
    * @return
    */
@@ -193,7 +200,7 @@ public class DeduplicatorBuilder<K, V> {
 
 
     final RecordSender<K, V> sender = new KafkaRecordSender<>(producerProperties, outboundTopic);
-    final RecordHandler<K,V> underlyingRecordHandler = new SingleThreadRecordHandler<>(dedupStrategy, dedupQueue, sender, clock, dedupCompleteListener);
+    final RecordHandler<K, V> underlyingRecordHandler = new SingleThreadRecordHandler<>(dedupStrategy, dedupQueue, sender, clock, dedupCompleteListener);
     final RecoveryService recoveryService = new LastRecordRecoveryService(consumerProperties, outboundTopic, inboundTopics.size());
 
     RecordHandler<K, V> recordHandler;

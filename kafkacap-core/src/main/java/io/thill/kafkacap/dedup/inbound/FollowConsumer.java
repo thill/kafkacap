@@ -18,6 +18,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * A kafka consumer that listens to a single inbound topic and has partitions manually assigned. Partition assignment is meant to come from a {@link
+ * LeadConsumer}.
+ *
+ * @param <K> The {@link ConsumerRecord} key type
+ * @param <V> The {@link ConsumerRecord} value type
+ * @author Eric Thill
+ */
 public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
 
   private static final Duration POLL_DURATION = Duration.ofSeconds(1);
@@ -34,6 +42,14 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   private final int topicIdx;
   private final RecordHandler<K, V> handler;
 
+  /**
+   * FollowConsumer Constructor
+   *
+   * @param consumerProperties The properties used to instantiate the underling {@link KafkaConsumer}
+   * @param topic              The inbound kafka topic
+   * @param topicIdx           The index assigned to the inbound kafka topic
+   * @param handler            The handler used to dispatch all received records
+   */
   public FollowConsumer(Properties consumerProperties, String topic, int topicIdx, RecordHandler<K, V> handler) {
     this.consumerProperties = consumerProperties;
     this.topic = topic;
@@ -41,6 +57,9 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
     this.handler = handler;
   }
 
+  /**
+   * Start the run loop in a new thread
+   */
   public void start() {
     new Thread(this, "FollowConsumer:" + topic).start();
   }

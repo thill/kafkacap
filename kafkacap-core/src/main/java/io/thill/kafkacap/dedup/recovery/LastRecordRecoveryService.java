@@ -21,6 +21,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 
+/**
+ * A {@link RecoveryService} implementation that is populated by polling the last record from the outbound topic
+ *
+ * @param <K> The record key type
+ * @param <V> The record value type
+ * @author Eric Thill
+ */
 public class LastRecordRecoveryService<K, V> implements RecoveryService<K, V> {
 
   private static final Duration POLL_DURATION = Duration.ofSeconds(10);
@@ -29,6 +36,13 @@ public class LastRecordRecoveryService<K, V> implements RecoveryService<K, V> {
   private final String outboundTopic;
   private final int numInboundTopics;
 
+  /**
+   * LastRecordRecoveryService constructor
+   *
+   * @param consumerProperties The properties used to instantiate the {@link KafkaConsumer}
+   * @param outboundTopic      The outbound topic to poll records from
+   * @param numInboundTopics   The total number of inbound topics
+   */
   public LastRecordRecoveryService(Properties consumerProperties, String outboundTopic, int numInboundTopics) {
     this.consumerProperties.putAll(consumerProperties);
     this.consumerProperties.remove(ConsumerConfig.GROUP_ID_CONFIG);

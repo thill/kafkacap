@@ -18,6 +18,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * An abstract implementation of a {@link DedupStrategy} that assumes each record contains an incrementing unique sequence number
+ *
+ * @param <K> kafka record key type
+ * @param <V> kafka record value type
+ */
 public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V> {
 
   private static final long DEFAULT_SEQUENCE_GAP_MILLIS = Duration.ofSeconds(10).toMillis();
@@ -27,10 +33,19 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
   private PartitionContext[] partitionContexts;
   private int numTopics;
 
+  /**
+   * SequencedDedupStrategy Constructor that uses a 10 second gap timeout
+   */
   public SequencedDedupStrategy() {
     this(DEFAULT_SEQUENCE_GAP_MILLIS);
   }
 
+  /**
+   * SequencedDedupStrategy Constructor that uses the given gap timeout. If all inbound records miss a message, it will be skipped immediately. A gap timeout
+   * will only be used when a Capture Device is down and a gap is detected across all remaining streams.
+   *
+   * @param sequenceGapTimeoutMillis The time that needs to elapsed with a missing message before forcing processing to continue
+   */
   public SequencedDedupStrategy(long sequenceGapTimeoutMillis) {
     this.sequenceGapTimeoutMillis = sequenceGapTimeoutMillis;
   }

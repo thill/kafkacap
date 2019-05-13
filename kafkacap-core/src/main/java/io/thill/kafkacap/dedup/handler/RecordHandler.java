@@ -6,7 +6,17 @@ package io.thill.kafkacap.dedup.handler;
 
 import io.thill.kafkacap.dedup.assignment.Assignment;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Headers;
 
+/**
+ * Encapsulates the logic of a {@link io.thill.kafkacap.dedup.Deduplicator}. It provides concurrency for calls to {@link
+ * io.thill.kafkacap.dedup.outbound.RecordSender#send(int, Object, Object, Headers)}, dispatches calls to an underlying {@link
+ * io.thill.kafkacap.dedup.strategy.DedupStrategy}, and forwards appropriate records to a {@link io.thill.kafkacap.dedup.outbound.KafkaRecordSender}
+ *
+ * @param <K> The kafka record key type
+ * @param <V> The kafka record value type
+ * @author Eric Thill
+ */
 public interface RecordHandler<K, V> extends AutoCloseable {
 
   void start();

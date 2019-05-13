@@ -30,19 +30,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * A runnable process that deduplicates inbound Kafka topics into a single outbound topic. The inbound topics are usually populated using a {@link
+ * io.thill.kafkacap.capture.CaptureDevice}
+ *
+ * @param <K> Kafka record key type
+ * @param <V> Kafka record value type
+ * @author Eric Thill
+ */
 public class Deduplicator<K, V> implements AutoCloseable {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final ThrottledDequeuer throttledDequeuer;
   private final List<FollowConsumer<K, V>> followConsumers;
   private final LeadConsumer<K, V> leadConsumer;
-  private final RecordHandler<K,V> recordHandler;
+  private final RecordHandler<K, V> recordHandler;
 
-  public Deduplicator(final String consumerGroupIdPrefix,
-                      final Properties consumerProperties,
-                      final List<String> topics,
-                      final RecordHandler<K, V> recordHandler,
-                      final RecoveryService recoveryService) {
+  Deduplicator(final String consumerGroupIdPrefix,
+               final Properties consumerProperties,
+               final List<String> topics,
+               final RecordHandler<K, V> recordHandler,
+               final RecoveryService recoveryService) {
     throttledDequeuer = new ThrottledDequeuer(recordHandler);
     followConsumers = new ArrayList<>();
     for(int i = 1; i < topics.size(); i++) {
@@ -60,6 +68,9 @@ public class Deduplicator<K, V> implements AutoCloseable {
     return properties;
   }
 
+  /**
+   * Start the underlying resources
+   */
   public void start() {
     logger.info("Starting {}", throttledDequeuer);
     throttledDequeuer.start();
@@ -102,11 +113,22 @@ public class Deduplicator<K, V> implements AutoCloseable {
     }
   }
 
+  /**
+   * Check if the current state of the lead consumer is subscribed
+   *
+   * @return true if subscribed to partitions, false otherwise
+   */
   public boolean isSubscribed() {
     return leadConsumer.isSubscribed();
   }
 
-  public static void main(String[] args) throws Exception {
+  /**
+   * Main method to start a {@link Deduplicator}
+   *
+   * @param args Main arguments. Assumes exactly 1 argument which is the path to the configuration file/resource
+   * @throws Exception
+   */
+  public static void main(String... args) throws Exception {
     final Logger logger = LoggerFactory.getLogger(Deduplicator.class);
 
     // check args

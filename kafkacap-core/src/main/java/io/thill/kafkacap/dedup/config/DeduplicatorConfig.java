@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * The configuration object used to start a {@link io.thill.kafkacap.dedup.Deduplicator} from a configuration
+ *
+ * @author Eric Thill
+ */
 public class DeduplicatorConfig {
 
   private String consumerGroupIdPrefix;

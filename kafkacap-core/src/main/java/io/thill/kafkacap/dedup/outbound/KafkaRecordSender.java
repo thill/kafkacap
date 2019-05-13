@@ -10,12 +10,25 @@ import org.apache.kafka.common.header.Headers;
 
 import java.util.Properties;
 
+/**
+ * Implementation of a {@link RecordSender} that encapsulates a {@link KafkaProducer}
+ *
+ * @param <K> The record key type
+ * @param <V> The record value type
+ * @author Eric Thill
+ */
 public class KafkaRecordSender<K, V> implements RecordSender<K, V> {
 
   private final Properties producerProperties;
   private final String topic;
   private KafkaProducer<K, V> producer;
 
+  /**
+   * KafkaRecordSender Constructor
+   *
+   * @param producerProperties The properties used to instantiate a {@link KafkaProducer}
+   * @param topic              The outbound kafka topic
+   */
   public KafkaRecordSender(Properties producerProperties, String topic) {
     this.producerProperties = producerProperties;
     this.topic = topic;

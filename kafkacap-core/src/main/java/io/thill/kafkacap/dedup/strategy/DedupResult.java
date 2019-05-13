@@ -4,6 +4,11 @@
  */
 package io.thill.kafkacap.dedup.strategy;
 
+/**
+ * An enumeration used by {@link DedupStrategy} to flag how to handle each record
+ *
+ * @author Eric Thill
+ */
 public enum DedupResult {
   /**
    * Drop the record

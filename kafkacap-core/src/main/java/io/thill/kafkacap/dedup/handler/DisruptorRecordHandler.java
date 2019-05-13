@@ -17,6 +17,14 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
+/**
+ * An implementation of a {@link RecordHandler} that uses a {@link Disruptor} for concurrency, queueing, and threading.  See the <a
+ * href="https://github.com/LMAX-Exchange/disruptor">Disruptor project on github</a> for more information
+ *
+ * @param <K> The kafka record key type
+ * @param <V> The kafka record value type
+ * @author Eric Thill
+ */
 public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -24,6 +32,13 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   private final RingBuffer<RecordEvent> ringBuffer;
   private final RecordHandler<K, V> underlyingRecordHandler;
 
+  /**
+   * DisruptorRecordHandler Constructor
+   *
+   * @param underlyingRecordHandler The underlying {@link RecordHandler} which will have all calls made from a single thread.
+   * @param ringBufferSize          The {@link Disruptor}'s {@link RingBuffer} size
+   * @param waitStrategy            The {@link Disruptor}'s {@link WaitStrategy}
+   */
   public DisruptorRecordHandler(RecordHandler<K, V> underlyingRecordHandler, int ringBufferSize, WaitStrategy waitStrategy) {
     this.underlyingRecordHandler = underlyingRecordHandler;
     this.disruptor = new Disruptor<>(RecordEvent::new, ringBufferSize, Executors.defaultThreadFactory(), ProducerType.MULTI, waitStrategy);

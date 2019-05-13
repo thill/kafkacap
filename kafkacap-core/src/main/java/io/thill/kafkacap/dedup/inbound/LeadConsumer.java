@@ -20,6 +20,14 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * A kafka consumer that subscribes to a single inbound kafka topic using a consumer group for partition assignment. Partition assignment/revocation callbacks
+ * are dispatched to underling {@link FollowConsumer}s and a {@link ThrottledDequeuer}.
+ *
+ * @param <K> The {@link ConsumerRecord} key type
+ * @param <V> The {@link ConsumerRecord} value type
+ * @author Eric Thill
+ */
 public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
 
   private static final Duration POLL_DURATION = Duration.ofSeconds(1);
@@ -37,6 +45,17 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   private final ThrottledDequeuer throttledDequeuer;
   private final RecoveryService<K, V> recoveryService;
 
+  /**
+   * LeadConsumer Constructor
+   *
+   * @param consumerProperties The properties used to instantiate the underling {@link KafkaConsumer}
+   * @param topic              The inbound kafka topic
+   * @param topicIdx           The index assigned to the inbound kafka topic
+   * @param handler            The handler used to dispatch all received records
+   * @param followConsumers    The follow consumers that require partition assignment callbacks
+   * @param throttledDequeuer  The throttled dequerer that requires partition assignment callbacks
+   * @param recoveryService    The recovery service used to poll last published records for all assignment partitions
+   */
   public LeadConsumer(Properties consumerProperties,
                       String topic,
                       int topicIdx,
@@ -53,6 +72,9 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
     this.recoveryService = recoveryService;
   }
 
+  /**
+   * Start the run loop in a new thread
+   */
   public void start() {
     new Thread(this, "LeadConsumer:" + topic).start();
   }

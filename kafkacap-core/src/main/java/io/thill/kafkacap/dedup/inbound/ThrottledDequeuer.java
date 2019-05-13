@@ -16,6 +16,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Calls {@link RecordHandler#tryDequeue(int)} periodically based on the current {@link io.thill.kafkacap.dedup.assignment.Assignment}
+ */
 public class ThrottledDequeuer implements Runnable, AutoCloseable {
 
   private static final Duration INTERVAL_DURACTION = Duration.ofSeconds(1);
@@ -28,10 +31,18 @@ public class ThrottledDequeuer implements Runnable, AutoCloseable {
 
   private final RecordHandler<?, ?> handler;
 
+  /**
+   * ThrottledDequeuer Constructor
+   *
+   * @param handler The handler used to dispatch all tryDequeue events
+   */
   public ThrottledDequeuer(RecordHandler<?, ?> handler) {
     this.handler = handler;
   }
 
+  /**
+   * Start the run loop in a new thread
+   */
   public void start() {
     new Thread(this, "ThrottledDequeuer").start();
   }

@@ -15,8 +15,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Headers;
 
 /**
- * Set as {@link io.thill.kafkacap.dedup.DeduplicatorBuilder#dedupCompleteListener(DedupCompleteListener)} to get <a
- * href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram Stat Tracking. Latency is measured from chronicleEnqueueTime to kafkaSendReturnedTime.
+ * A stat tracking implementation of a {@link DedupCompleteListener}. Set as {@link io.thill.kafkacap.dedup.DeduplicatorBuilder#dedupCompleteListener(DedupCompleteListener)}
+ * to get <a href="https://github.com/thillio/trakrj">TrakrJ</a> Histogram Stat Tracking. Latency is measured from chronicleEnqueueTime to
+ * kafkaSendReturnedTime.
+ *
+ * @author Eric Thill
  */
 public class DedupStatTracker<K, V> implements DedupCompleteListener<K, V> {
 
@@ -24,6 +27,14 @@ public class DedupStatTracker<K, V> implements DedupCompleteListener<K, V> {
   private final Stats stats;
   private final TrackerId trackerId;
 
+  /**
+   * The Constructor
+   *
+   * @param clock The clock implementation to generate timestamp
+   * @param stats The stats instance to use
+   * @param trackerId The tracker ID to use to log latency records
+   * @param intervalSeconds The number of seconds of sampling between stat logging
+   */
   public DedupStatTracker(final Clock clock,
                           final Stats stats,
                           final TrackerId trackerId,

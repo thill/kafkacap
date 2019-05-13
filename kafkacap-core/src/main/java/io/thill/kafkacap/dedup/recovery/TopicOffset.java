@@ -6,6 +6,9 @@ package io.thill.kafkacap.dedup.recovery;
 
 import io.thill.kafkacap.util.constant.RecordHeaderKeys;
 
+/**
+ * @author Eric Thill
+ */
 class TopicOffset {
   private final int topicIdx;
   private final String headerKey;
