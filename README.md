@@ -6,8 +6,8 @@ This is a work-on-progress. Pardon my dust.
 
 ## Architecture
 * 2 or more Capture Devices write to separate Kafka Topics
-* A Deduplicator process listens to the Capture Device Topics and writes unique messages to an single Kafka Topic 
-* Multiple Deduplicator processes should be started with the same Kafka Consumer `group.id` for fault-tolerance 
+* A Deduplicator process listens to the Capture Device topics and writes unique messages to a single Kafka Topic 
+* Multiple Deduplicator processes with the same Kafka Consumer `group.id` run to provide fault-tolerance 
 
 TODO: Diagram
 
@@ -19,10 +19,11 @@ Full Details: [Core](kafkacap-core)
 "Bring Your Own Receiver" - An abstract CaptureDevice class allows simple plug-and-play
 
 ### Deduplicator
-Instantiate a Deduplicator with a custom DedupStrategy to write to a unified outbound topic. Downstream consumers can treat the outbound topic as any normal Kafka topic. 
+Instantiate a Deduplicator with a custom DedupStrategy to generate a unified outbound topic. Downstream consumers can treat the outbound topic as any normal Kafka topic, while having high confidence that all messages are captured and appropriately ordered. 
 
 
-## Provided Capture Device Implementations
+## Provided Implementations
 
+### Capture Devices
 * [Aeron](kafkacap-aeron)
 * [Multicast](kafkacap-multicast)
