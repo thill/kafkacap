@@ -82,12 +82,12 @@ public abstract class CaptureDevice implements Runnable, AutoCloseable {
     } catch(Throwable t) {
       logger.error("Encountered Unhandled Exception", t);
     } finally {
-      logger.info("Closing Stats...");
-      stats.close();
       logger.info("Cleanup...");
       cleanup();
       logger.info("Closing Publisher...");
       tryClose(bufferedPublisher);
+      logger.info("Closing Stats...");
+      stats.close();
       logger.info("Closed");
       closeComplete.countDown();
     }

@@ -1,14 +1,26 @@
 package io.thill.kafkacap.dedup;
 
+import io.thill.kafkacap.dedup.callback.DedupStatTracker;
+import io.thill.kafkacap.dedup.config.DeduplicatorConfig;
 import io.thill.kafkacap.dedup.handler.RecordHandler;
 import io.thill.kafkacap.dedup.inbound.FollowConsumer;
 import io.thill.kafkacap.dedup.inbound.LeadConsumer;
 import io.thill.kafkacap.dedup.inbound.ThrottledDequeuer;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
+import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
 import io.thill.kafkacap.dedup.recovery.RecoveryService;
+import io.thill.kafkacap.dedup.strategy.DedupStrategy;
+import io.thill.kafkacap.util.clock.Clock;
+import io.thill.kafkacap.util.clock.SystemMillisClock;
+import io.thill.kafkacap.util.io.ResourceLoader;
+import io.thill.trakrj.Stats;
+import io.thill.trakrj.TrackerId;
+import io.thill.trakrj.logger.Slf4jStatLogger;
+import org.agrona.concurrent.SigInt;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,4 +102,58 @@ public class Deduplicator<K, V> implements AutoCloseable {
     return leadConsumer.isSubscribed();
   }
 
+  public static void main(String[] args) throws Exception {
+    final Logger logger = LoggerFactory.getLogger(Deduplicator.class);
+
+    // check args
+    if(args.length != 1) {
+      System.err.println("Usage: Deduplicator <config>");
+      logger.error("Missing Configuration Parameter");
+      System.exit(1);
+    }
+
+    // load config
+    logger.info("Loading config from {}...", args[0]);
+    final String configStr = ResourceLoader.loadResourceOrFile(args[0]);
+    logger.info("Loaded Config:\n{}", configStr);
+    final DeduplicatorConfig config = new Yaml().loadAs(configStr, DeduplicatorConfig.class);
+    logger.info("Parsed Config: {}", config);
+
+    // start stats
+    logger.info("Starting Stats...");
+    final Stats stats = Stats.create(new Slf4jStatLogger());
+
+    // instantiate dedup strategy
+    logger.info("Instantiating {}", config.getDedupStrategy());
+    DedupStrategy dedupStrategy = (DedupStrategy)Class.forName(config.getDedupStrategy()).newInstance();
+
+    // instantiate and start deduplicator
+    logger.info("Instantiating {}...", Deduplicator.class.getSimpleName());
+    final Clock clock = new SystemMillisClock();
+    final Deduplicator deduplicator = new DeduplicatorBuilder<>()
+            .consumerGroupIdPrefix(config.getConsumerGroupIdPrefix())
+            .consumerProperties(config.getConsumerProperties())
+            .producerProperties(config.getProducerProperties())
+            .outboundTopic(config.getOutboundTopic())
+            .inboundTopics(config.getInboundTopics())
+            .dedupStrategy(dedupStrategy)
+            .dedupQueue(new MemoryDedupQueue<>())
+            .dedupCompleteListener(new DedupStatTracker<>(clock, stats, TrackerId.generate("latency"), 10000))
+            .clock(clock)
+            .build();
+    logger.info("Registering SigInt Handler...");
+    SigInt.register(() -> {
+      try {
+        logger.info("Closing Deduplicator...");
+        deduplicator.close();
+        logger.info("Closing Stats...");
+        stats.close();
+        logger.info("Closed");
+      } catch(Throwable t) {
+        logger.error("Close Exception", t);
+      }
+    });
+    logger.info("Starting...");
+    deduplicator.start();
+  }
 }
