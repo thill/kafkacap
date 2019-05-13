@@ -29,3 +29,9 @@ hs_err_pid*
 # IntelliJ
 /.idea/workspace.xml
 /.idea/libraries/
+
+# Kafka
+/kafka/
+*/kafka/
+/zookeeper/
+*/zookeeper/

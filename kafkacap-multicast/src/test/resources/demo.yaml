@@ -1,0 +1,15 @@
+receiver:
+  iface: "localhost"
+  group: "FF02:0:0:0:0:0:0:1"
+  port: 60137
+  mtu: 1500
+chronicle:
+  path: "/tmp/chronicle/capture_instance_1"
+  rollCycle: "MINUTELY"
+kafka:
+  producer:
+    bootstrap.servers: "localhost:9092"
+    key.serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
+    value.serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
+  topic: "capture_topic_1"
+  partition: 0

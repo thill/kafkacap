@@ -1,20 +1,14 @@
 package io.thill.kafkacap.multicast;
 
-import io.thill.kafkacap.capture.BufferedPublisher;
-import io.thill.kafkacap.capture.BufferedPublisherBuilder;
 import io.thill.kafkacap.capture.config.ChronicleConfig;
 import io.thill.kafkacap.capture.config.KafkaConfig;
-import io.thill.kafkacap.capture.populator.DefaultRecordPopulator;
-import io.thill.kafkacap.capture.queue.ChronicleCaptureQueue;
 import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
 import io.thill.kafkacap.multicast.config.MulticastConfig;
-import io.thill.kafkacap.util.clock.SettableClock;
 import io.thill.kafkacap.util.constant.RecordHeaderKeys;
 import io.thill.kafkacap.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
 import net.openhft.chronicle.queue.RollCycles;
-import net.openhft.chronicle.queue.impl.single.SingleChronicleQueueBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -73,7 +67,7 @@ public class TestMulticastCaptureDevice {
     chronicle.setRollCycle(RollCycles.TEST_SECONDLY);
 
     KafkaConfig kafka = new KafkaConfig();
-    kafka.setProducer(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class));
+    kafka.setProducerProperties(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class));
     kafka.setTopic(TOPIC);
     kafka.setPartition(0);
 

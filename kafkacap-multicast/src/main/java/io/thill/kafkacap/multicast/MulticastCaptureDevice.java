@@ -10,8 +10,12 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
 
+/**
+ *
+ *
+ * @author Eric Thill
+ */
 public class MulticastCaptureDevice extends CaptureDevice {
 
   public static void main(String... args) throws IOException {
