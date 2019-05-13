@@ -2,14 +2,19 @@ package io.thill.kafkacap.multicast;
 
 import io.thill.kafkacap.capture.BufferedPublisher;
 import io.thill.kafkacap.capture.BufferedPublisherBuilder;
+import io.thill.kafkacap.capture.config.ChronicleConfig;
+import io.thill.kafkacap.capture.config.KafkaConfig;
 import io.thill.kafkacap.capture.populator.DefaultRecordPopulator;
-import io.thill.kafkacap.multicast.MulticastCaptureDevice;
-import io.thill.kafkacap.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.capture.queue.ChronicleCaptureQueue;
+import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
+import io.thill.kafkacap.multicast.config.MulticastConfig;
 import io.thill.kafkacap.util.clock.SettableClock;
+import io.thill.kafkacap.util.constant.RecordHeaderKeys;
 import io.thill.kafkacap.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
 import net.openhft.chronicle.queue.RollCycles;
+import net.openhft.chronicle.queue.impl.single.SingleChronicleQueueBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -22,7 +27,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -33,9 +40,6 @@ public class TestMulticastCaptureDevice {
   private static final String CHRONICLE_QUEUE_PATH = "/tmp/TestMulticastCaptureDevice";
   private static final String MULTICAST_ADDRESS = "FF02:0:0:0:0:0:0:1";
   private static final int MULTICAST_PORT = 60137;
-
-  private final SettableClock enqueueClock = new SettableClock();
-  private final SettableClock populaterClock = new SettableClock();
 
   private MulticastCaptureDevice device;
   private QueuedKafkaConsumer<Void, String> kafkaConsumer;
@@ -57,14 +61,28 @@ public class TestMulticastCaptureDevice {
 
   private void start() throws Exception {
     FileUtil.deleteRecursive(new File(CHRONICLE_QUEUE_PATH));
-    BufferedPublisher bufferedPublisher = new BufferedPublisherBuilder()
-            .chronicleQueuePath(CHRONICLE_QUEUE_PATH)
-            .chronicleQueueRollCycle(RollCycles.TEST_SECONDLY)
-            .clock(enqueueClock)
-            .kafkaProducerProperties(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class))
-            .recordPopulator(new DefaultRecordPopulator(TOPIC, 0, populaterClock))
-            .build();
-    MulticastCaptureDevice device = new MulticastCaptureDevice(InetAddress.getLocalHost(), InetAddress.getByName(MULTICAST_ADDRESS), MULTICAST_PORT, 1500, bufferedPublisher);
+
+    MulticastConfig receiver = new MulticastConfig();
+    receiver.setGroup(MULTICAST_ADDRESS);
+    receiver.setIface("localhost");
+    receiver.setMtu(1500);
+    receiver.setPort(MULTICAST_PORT);
+
+    ChronicleConfig chronicle = new ChronicleConfig();
+    chronicle.setPath(CHRONICLE_QUEUE_PATH);
+    chronicle.setRollCycle(RollCycles.TEST_SECONDLY);
+
+    KafkaConfig kafka = new KafkaConfig();
+    kafka.setProducer(KafkaLite.producerProperties(ByteArraySerializer.class, ByteArraySerializer.class));
+    kafka.setTopic(TOPIC);
+    kafka.setPartition(0);
+
+    MulticastCaptureDeviceConfig mcastConfig = new MulticastCaptureDeviceConfig();
+    mcastConfig.setReceiver(receiver);
+    mcastConfig.setChronicle(chronicle);
+    mcastConfig.setKafka(kafka);
+
+    MulticastCaptureDevice device = new MulticastCaptureDevice(mcastConfig);
     device.start();
 
     sendSocket = new MulticastSocket();
@@ -91,23 +109,21 @@ public class TestMulticastCaptureDevice {
   public void testMessageFlow() throws Exception {
     start();
 
-    populaterClock.set(3);
+    final long time = System.currentTimeMillis();
 
-    enqueueClock.set(1);
     send("M1".getBytes());
 
     ConsumerRecord<Void, String> record1 = kafkaConsumer.poll();
     Assert.assertEquals("M1", record1.value());
-    Assert.assertEquals(1, parseLongHeader(record1, RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME));
-    Assert.assertEquals(3, parseLongHeader(record1, RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME));
+    Assert.assertTrue(parseLongHeader(record1, RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME) >= time);
+    Assert.assertTrue(parseLongHeader(record1, RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME) >= time);
 
-    enqueueClock.set(2);
     send("M2".getBytes());
 
     ConsumerRecord<Void, String> record2 = kafkaConsumer.poll();
     Assert.assertEquals("M2", record2.value());
-    Assert.assertEquals(2, parseLongHeader(record2, RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME));
-    Assert.assertEquals(3, parseLongHeader(record2, RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME));
+    Assert.assertTrue(parseLongHeader(record2, RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME) >= time);
+    Assert.assertTrue(parseLongHeader(record2, RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME) >= time);
 
     Assert.assertTrue(kafkaConsumer.isEmpty());
   }
