@@ -9,7 +9,7 @@ This is a work-on-progress. Pardon my dust.
 * A Deduplicator process listens to the Capture Device topics and writes unique messages to a single Kafka Topic 
 * Multiple Deduplicator processes with the same Kafka Consumer `group.id` run to provide fault-tolerance 
 
-TODO: Diagram
+![Architecture](docs/kafkacap_architecture.png "Architecture")
 
 
 ## Core

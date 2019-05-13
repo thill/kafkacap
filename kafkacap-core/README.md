@@ -36,7 +36,7 @@ BufferedPublisher<byte[], byte[]> bufferedPublisher = new BufferedPublisherBuild
 ### Deduplicator Overview
 A Kafka Consumer Group that is responsible for deduplicating messages from redundant capture topics
 
-TODO: Single-Partition Diagram
+![Single-Partition](docs/kafkacap_single_partition.png "Single-Partition")
 
 ### DedupStrategy
 Deduplication logic relies on the user's implementation of `io.thill.kafkacap.dedup.strategy.DedupStrategy`. All received messages from all capture topics will be checked by the strategy and must return `SEND`, `DROP`, or `QUEUE`. 
@@ -56,4 +56,4 @@ As far as the deduplicator is concerend, inboundPartition == outboundPartition, 
 ### Kafka Consumer Groups
 The Deduplicator relies on Kafka Consumer Groups for fault tolerance. Since it consumes multiple inbound topics which must be deduplicated, the first topic in the `inboundTopics` list is used for topic subscription / partition assignment. Upon partition assignment for this first topic from the Kafka Cluster, all other topics will be manually assigned to match the same partition assignment. This allows multi-partition schemes to be load balanced between all available deduplicator processes in the consumer group. 
 
-TODO: Multi-Partition Diagram
+![Multi-Partition](docs/kafkacap_multi_partition.png "Multi-Partition")
