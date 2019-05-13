@@ -7,6 +7,8 @@ Reliably Capture Messages to Kafka using redundant Capture Devices and a Dedupli
 ### Capture Overview
 A single process that listens to a stream of messages, buffers them to a queue, and publishes them to a single Kafka Topic. On its own, this process is not fault-tolerant and its outbound topic is not guaranteed to contain all messages sent on the inbound transport. 
 
+![Capture](docs/kafkacap_capture.png "Capture")
+
 ### Queueing
 A Capture process queues messages before writing them to Kafka. This is done to reduce back-pressure on the receiver. A sufficiently large queue will also be able to queue messages during a full Kafka outage until the outage is resolved. 
 * In-Memory: `MemoryCaptureQueue` will queue all received messages in-memory. Capacity is limited by the underlying queue implementation and the JVM heap size. 
