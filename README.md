@@ -13,13 +13,15 @@ This is a work-on-progress. Pardon my dust.
 
 
 ## Core
-Full Details: [Core](kafkacap-core)
 
 ### Capture Device
 "Bring Your Own Receiver" - An abstract CaptureDevice class allows simple plug-and-play
 
 ### Deduplicator
-Instantiate a Deduplicator with a custom DedupStrategy to generate a unified outbound topic. Downstream consumers can treat the outbound topic as any normal Kafka topic, while having high confidence that all messages are captured and appropriately ordered. 
+Instantiate a Deduplicator with a custom DedupStrategy to generate a unified outbound topic. Downstream consumers can treat the outbound topic as any normal Kafka topic, while having high confidence that all messages are captured and appropriately ordered.
+
+### Documentation
+Full Details: [Core](kafkacap-core) 
 
 
 ## Provided Implementations

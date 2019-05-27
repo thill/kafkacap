@@ -21,14 +21,10 @@ A Capture process queues messages before writing them to Kafka. This is done to 
 For additional flexibility, a `BufferedPublisher` can be instantiated and used directly, instead of relying on the abstraction of a `CaptureDevice`.
 
 ```
-Clock clock = new SystemMillisClock();
-CaptureQueue captureQueue = new MemoryCaptureQueue();
 BufferedPublisher<byte[], byte[]> bufferedPublisher = new BufferedPublisherBuilder<byte[], byte[]>()
-        .kafkaProducerProperties(kafkaProducerProperties)
-        .captureQueue(captureQueue)
-        .recordPopulator(new DefaultRecordPopulator<>(config.getKafka().getTopic(), config.getKafka().getPartition(), clock))
-        .clock(clock)
-        .sendCompleteListener(new SendStatTracker(clock, stats, TrackerId.generate("latency"), 10))
+        .captureQueue            ( new MemoryCaptureQueue() )
+        .recordPopulator         ( new DefaultRecordPopulator<>(config.getKafka().getTopic(), config.getKafka().getPartition(), clock) )
+        .kafkaProducerProperties ( kafkaProducerProperties )
         .build();
 ```
 
@@ -44,7 +40,7 @@ A Kafka Consumer Group that is responsible for deduplicating messages from redun
 Deduplication logic relies on the user's implementation of `io.thill.kafkacap.dedup.strategy.DedupStrategy`. All received messages from all capture topics will be checked by the strategy and must return `SEND`, `DROP`, or `CACHE`. 
 * `SEND` - Send this message immediately
 * `DROP` - Drop this messages indefinitely
-* `CACHE` - Add this message to the back of a per-capture-topic cache, so it can be tried again very soon.
+* `CACHE` - Add this message to a per-capture-topic cache, so it can be tried again very soon.
 
 ### SequencedDedupStrategy
 For streams consisting of a sequenced stream of messages, an abstract class called `SequencedDedupStrategy` is provided. The user must simply implement `long parseSequence(ConsumerRecord<K, V> record)` to parse the sequence from the captured messages. 
@@ -82,4 +78,21 @@ inboundTopics:
   - "capture_B"
 outboundTopic: "outbound"
 dedupStrategy: "io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy"
+```
+
+## Builder
+For added flexibility, a `Deduplicator` can be instantiated and started in code using the `DeduplicatorBuilder`.
+
+```
+DedupStrategy myDedupStrategy = ...
+Deduplicator deduplicator = new DeduplicatorBuilder<>()
+  .dedupStrategy         ( myDedupStrategy )
+  .consumerGroupIdPrefix ( "mydeduplicator_" )
+  .outboundTopic         ( "my_topic" )
+  .inboundTopics         ( Arrays.asList("capture_topic_1", "capture_topic_2") )  
+  .consumerProperties    ( consumerProperties )
+  .producerProperties    ( producerProperties )
+  .recordCacheFactory    ( MemoryRecordCache.factory() )
+  .orderedCapture        ( false )
+  .build();
 ```
