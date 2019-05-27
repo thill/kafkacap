@@ -23,7 +23,7 @@ For additional flexibility, a `BufferedPublisher` can be instantiated and used d
 ```
 BufferedPublisher<byte[], byte[]> bufferedPublisher = new BufferedPublisherBuilder<byte[], byte[]>()
         .captureQueue            ( new MemoryCaptureQueue() )
-        .recordPopulator         ( new DefaultRecordPopulator<>(config.getKafka().getTopic(), config.getKafka().getPartition(), clock) )
+        .recordPopulator         ( new DefaultRecordPopulator<>("my_topic_capture_a", 0, new SystemMillisClock()) )
         .kafkaProducerProperties ( kafkaProducerProperties )
         .build();
 ```
@@ -89,7 +89,7 @@ Deduplicator deduplicator = new DeduplicatorBuilder<>()
   .dedupStrategy         ( myDedupStrategy )
   .consumerGroupIdPrefix ( "mydeduplicator_" )
   .outboundTopic         ( "my_topic" )
-  .inboundTopics         ( Arrays.asList("capture_topic_1", "capture_topic_2") )  
+  .inboundTopics         ( Arrays.asList("my_topic_capture_a", "my_topic_capture_b") )  
   .consumerProperties    ( consumerProperties )
   .producerProperties    ( producerProperties )
   .recordCacheFactory    ( MemoryRecordCache.factory() )
