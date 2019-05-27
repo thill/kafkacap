@@ -5,9 +5,9 @@
 package io.thill.kafkacap.dedup.handler;
 
 import io.thill.kafkacap.dedup.assignment.Assignment;
+import io.thill.kafkacap.dedup.cache.RecordCacheManager;
 import io.thill.kafkacap.dedup.callback.DedupCompleteListener;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
-import io.thill.kafkacap.dedup.queue.DedupQueue;
 import io.thill.kafkacap.dedup.recovery.PartitionOffsets;
 import io.thill.kafkacap.dedup.strategy.DedupResult;
 import io.thill.kafkacap.dedup.strategy.DedupStrategy;
@@ -22,8 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of a {@link RecordHandler} that handles flow between the {@link DedupStrategy}, {@link DedupQueue}, and {@link RecordSender}, but is not
- * thread-safe. It is meant to be encapsulated by a thread-safe implementation.
+ * An implementation of a {@link RecordHandler} that handles flow between the {@link DedupStrategy}, {@link RecordCacheManager}, and {@link RecordSender}, but
+ * is not thread-safe. It is meant to be encapsulated by a thread-safe implementation.
  *
  * @param <K> The kafka record key type
  * @param <V> The kafka record value type
@@ -33,7 +33,8 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final DedupStrategy<K, V> dedupStrategy;
-  private final DedupQueue<K, V> dedupQueue;
+  private final RecordCacheManager<K, V> recordCacheManager;
+  private final boolean orderedCapture;
   private final RecordSender<K, V> sender;
   private final Clock clock;
   private final DedupCompleteListener<K, V> dedupCompleteListener;
@@ -44,18 +45,21 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
    * SingleThreadRecordHandler Constructor
    *
    * @param dedupStrategy         The dedup strategy
-   * @param dedupQueue            The dedup queue
+   * @param recordCacheManager    The RecordCache manager
+   * @param orderedCapture        Flag if the captured messages are ordered (true), or unordered (false)
    * @param sender                The record sender
    * @param clock                 The clock
    * @param dedupCompleteListener Optional dedup complete callback
    */
   public SingleThreadRecordHandler(DedupStrategy<K, V> dedupStrategy,
-                                   DedupQueue<K, V> dedupQueue,
+                                   RecordCacheManager<K, V> recordCacheManager,
+                                   boolean orderedCapture,
                                    RecordSender<K, V> sender,
                                    Clock clock,
                                    DedupCompleteListener<K, V> dedupCompleteListener) {
     this.dedupStrategy = dedupStrategy;
-    this.dedupQueue = dedupQueue;
+    this.recordCacheManager = recordCacheManager;
+    this.orderedCapture = orderedCapture;
     this.sender = sender;
     this.clock = clock;
     this.dedupCompleteListener = dedupCompleteListener;
@@ -67,8 +71,8 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
-  public void close() throws Exception {
-    dedupQueue.close();
+  public void close() {
+    recordCacheManager.close();
     sender.close();
   }
 
@@ -88,51 +92,98 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
         logger.debug("Sending {}", record);
         send(record);
         break;
-      case QUEUE:
+      case CACHE:
         logger.debug("Enqueueing {}", record);
-        enqueue(record, topicIdx);
+        addToCache(record, topicIdx);
         break;
     }
 
   }
 
   @Override
-  public void tryDequeue(final int partition) {
+  public void checkCache(final int partition) {
+    if(orderedCapture) {
+      checkCacheOrdered(partition);
+    } else {
+      checkCacheUnordered(partition);
+    }
+  }
+
+  private void checkCacheOrdered(final int partition) {
     int totalDropped = 0;
     int totalSent = 0;
-    if(!dedupQueue.isEmpty(partition)) {
+    if(!recordCacheManager.isEmpty(partition)) {
       boolean sentSomething = false;
       do {
         for(int topicIdx = 0; topicIdx < numTopics; topicIdx++) {
-          final ConsumerRecord<K, V> topRecord = dedupQueue.peek(partition, topicIdx);
+          final ConsumerRecord<K, V> topRecord = recordCacheManager.peek(partition, topicIdx);
           if(topRecord != null) {
             DedupResult result = dedupStrategy.check(topRecord);
             switch(result) {
               case DROP:
-                final ConsumerRecord<K, V> droppedRecord = dedupQueue.poll(partition, topicIdx);
-                logger.debug("Dropped from Queue: {}", droppedRecord);
+                final ConsumerRecord<K, V> droppedRecord = recordCacheManager.poll(partition, topicIdx);
+                logger.debug("Dropped from Cache: {}", droppedRecord);
                 totalDropped++;
                 break;
               case SEND:
-                final ConsumerRecord<K, V> sendRecord = dedupQueue.poll(partition, topicIdx);
-                logger.debug("Sending from Queue: {}", sendRecord);
+                final ConsumerRecord<K, V> sendRecord = recordCacheManager.poll(partition, topicIdx);
+                logger.debug("Sending from Cache: {}", sendRecord);
                 send(sendRecord);
                 totalSent++;
                 sentSomething = true;
                 break;
-              case QUEUE:
+              case CACHE:
                 // leave at top of queue
                 break;
             }
           }
         }
-      } while(sentSomething && !dedupQueue.isEmpty(partition));
+      } while(sentSomething && !recordCacheManager.isEmpty(partition));
     }
     if(totalSent > 0) {
-      logger.info("Partition {} sent {} records from queue", partition, totalSent);
+      logger.info("Partition {} sent {} records from cache", partition, totalSent);
     }
     if(totalDropped > 0) {
-      logger.info("Partition {} dropped {} duplicate records from queue", partition, totalDropped);
+      logger.info("Partition {} dropped {} duplicate records from cache", partition, totalDropped);
+    }
+  }
+
+  private void checkCacheUnordered(final int partition) {
+    int totalDropped = 0;
+    int totalSent = 0;
+    if(!recordCacheManager.isEmpty(partition)) {
+      boolean sentSomething = false;
+      do {
+        for(int topicIdx = 0; topicIdx < numTopics; topicIdx++) {
+          for(int recordIdx = 0; recordIdx < recordCacheManager.size(partition, topicIdx); recordIdx++) {
+            final ConsumerRecord<K, V> record = recordCacheManager.get(partition, topicIdx, recordIdx);
+            DedupResult result = dedupStrategy.check(record);
+            switch(result) {
+              case DROP:
+                final ConsumerRecord<K, V> droppedRecord = recordCacheManager.remove(partition, topicIdx, recordIdx);
+                logger.debug("Dropped from Cache: {}", droppedRecord);
+                totalDropped++;
+                break;
+              case SEND:
+                final ConsumerRecord<K, V> sendRecord = recordCacheManager.remove(partition, topicIdx, recordIdx);
+                logger.debug("Sending from Cache: {}", sendRecord);
+                send(sendRecord);
+                totalSent++;
+                sentSomething = true;
+                break;
+              case CACHE:
+                // leave in cache
+                break;
+            }
+          }
+        }
+      } while(sentSomething && !recordCacheManager.isEmpty(partition));
+    }
+    if(totalSent > 0) {
+      logger.info("Partition {} sent {} records from cache", partition, totalSent);
+    }
+    if(totalDropped > 0) {
+      logger.info("Partition {} dropped {} duplicate records from cache", partition, totalDropped);
     }
   }
 
@@ -155,11 +206,11 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
     return headers;
   }
 
-  private void enqueue(final ConsumerRecord<K, V> record, final int topicIdx) {
-    if(dedupQueue.isEmpty(record.partition(), topicIdx)) {
+  private void addToCache(final ConsumerRecord<K, V> record, final int topicIdx) {
+    if(recordCacheManager.isEmpty(record.partition(), topicIdx)) {
       logger.info("Starting to queue on topic={} partition={}", record.topic(), record.partition());
     }
-    dedupQueue.add(record.partition(), topicIdx, record);
+    recordCacheManager.add(record.partition(), topicIdx, record);
   }
 
   @Override
@@ -167,14 +218,14 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
     this.numTopics = assignment.getNumTopics();
     this.offsets = assignment.getOffsets();
     sender.open();
-    dedupQueue.assigned(assignment);
+    recordCacheManager.assigned(assignment);
     dedupStrategy.assigned(assignment);
   }
 
   @Override
   public void revoked() {
     sender.close();
-    dedupQueue.revoked();
+    recordCacheManager.revoked();
     dedupStrategy.revoked();
   }
 

@@ -70,8 +70,8 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
-  public void tryDequeue(final int partition) {
-    dispatch(RecordEventType.TRY_DEQUEUE, null, -1, partition, null, false);
+  public void checkCache(final int partition) {
+    dispatch(RecordEventType.CHECK_CACHE, null, -1, partition, null, false);
   }
 
   @Override
@@ -126,8 +126,8 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
           case HANDLE:
             underlyingRecordHandler.handle(event.record, event.topicIdx);
             break;
-          case TRY_DEQUEUE:
-            underlyingRecordHandler.tryDequeue(event.partition);
+          case CHECK_CACHE:
+            underlyingRecordHandler.checkCache(event.partition);
             break;
           case ASSIGNED:
             underlyingRecordHandler.assigned(event.assignment);
@@ -191,6 +191,6 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   private enum RecordEventType {
-    START, CLOSE, HANDLE, TRY_DEQUEUE, ASSIGNED, REVOKED;
+    START, CLOSE, HANDLE, CHECK_CACHE, ASSIGNED, REVOKED;
   }
 }

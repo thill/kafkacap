@@ -4,14 +4,13 @@
  */
 package io.thill.kafkacap.dedup;
 
+import io.thill.kafkacap.dedup.cache.MemoryRecordCache;
 import io.thill.kafkacap.dedup.callback.DedupStatTracker;
 import io.thill.kafkacap.dedup.config.DeduplicatorConfig;
 import io.thill.kafkacap.dedup.handler.RecordHandler;
 import io.thill.kafkacap.dedup.inbound.FollowConsumer;
 import io.thill.kafkacap.dedup.inbound.LeadConsumer;
 import io.thill.kafkacap.dedup.inbound.ThrottledDequeuer;
-import io.thill.kafkacap.dedup.outbound.RecordSender;
-import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
 import io.thill.kafkacap.dedup.recovery.RecoveryService;
 import io.thill.kafkacap.dedup.strategy.DedupStrategy;
 import io.thill.kafkacap.util.clock.Clock;
@@ -168,7 +167,8 @@ public class Deduplicator<K, V> implements AutoCloseable {
             .outboundTopic(config.getOutboundTopic())
             .inboundTopics(config.getInboundTopics())
             .dedupStrategy(dedupStrategy)
-            .dedupQueue(new MemoryDedupQueue<>())
+            .recordCacheFactory(MemoryRecordCache.factory())
+            .orderedCapture(config.isOrderedCapture())
             .dedupCompleteListener(new DedupStatTracker<>(clock, stats, TrackerId.generate("latency"), 10))
             .clock(clock)
             .build();

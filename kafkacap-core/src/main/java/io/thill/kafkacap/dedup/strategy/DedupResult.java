@@ -23,5 +23,5 @@ public enum DedupResult {
   /**
    * Add the record to a queue to be tried again
    */
-  QUEUE
+  CACHE
 }

@@ -6,6 +6,9 @@ package io.thill.kafkacap.dedup;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
+import io.thill.kafkacap.dedup.cache.MemoryRecordCache;
+import io.thill.kafkacap.dedup.cache.RecordCacheFactory;
+import io.thill.kafkacap.dedup.cache.RecordCacheManager;
 import io.thill.kafkacap.dedup.callback.DedupCompleteListener;
 import io.thill.kafkacap.dedup.handler.DisruptorRecordHandler;
 import io.thill.kafkacap.dedup.handler.RecordHandler;
@@ -13,8 +16,6 @@ import io.thill.kafkacap.dedup.handler.SingleThreadRecordHandler;
 import io.thill.kafkacap.dedup.handler.SynchronizedRecordHandler;
 import io.thill.kafkacap.dedup.outbound.KafkaRecordSender;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
-import io.thill.kafkacap.dedup.queue.DedupQueue;
-import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
 import io.thill.kafkacap.dedup.recovery.LastRecordRecoveryService;
 import io.thill.kafkacap.dedup.recovery.RecoveryService;
 import io.thill.kafkacap.dedup.strategy.DedupStrategy;
@@ -39,7 +40,8 @@ public class DeduplicatorBuilder<K, V> {
   private List<String> inboundTopics;
   private String outboundTopic;
   private DedupStrategy<K, V> dedupStrategy;
-  private DedupQueue<K, V> dedupQueue;
+  private RecordCacheFactory<K, V> recordCacheFactory;
+  private boolean orderedCapture;
   private Clock clock = new SystemMillisClock();
   private DedupCompleteListener<K, V> dedupCompleteListener;
   private ConcurrencyMode concurrencyMode = ConcurrencyMode.DISRUPTOR;
@@ -113,13 +115,25 @@ public class DeduplicatorBuilder<K, V> {
   }
 
   /**
-   * Set the {@link DedupQueue}. Defaults to {@link MemoryDedupQueue}.
+   * Set the {@link RecordCacheFactory}. Defaults to {@link MemoryRecordCache#factory()}.
    *
-   * @param dedupQueue
+   * @param recordCacheFactory
    * @return
    */
-  public DeduplicatorBuilder<K, V> dedupQueue(DedupQueue<K, V> dedupQueue) {
-    this.dedupQueue = dedupQueue;
+  public DeduplicatorBuilder<K, V> recordCacheFactory(RecordCacheFactory<K, V> recordCacheFactory) {
+    this.recordCacheFactory = recordCacheFactory;
+    return this;
+  }
+
+  /**
+   * Set the flag to determine if capture topic is ordered. Defaults to false. Setting to true for capture streams with guaranteed ordering will improve
+   * performance.
+   *
+   * @param orderedCapture
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> orderedCapture(boolean orderedCapture) {
+    this.orderedCapture = orderedCapture;
     return this;
   }
 
@@ -191,16 +205,17 @@ public class DeduplicatorBuilder<K, V> {
       throw new IllegalArgumentException("outboundTopic cannot be null");
     if(dedupStrategy == null)
       throw new IllegalArgumentException("dedupStrategy cannot be null");
-    if(dedupQueue == null)
-      dedupQueue = new MemoryDedupQueue<>();
+    if(recordCacheFactory == null)
+      recordCacheFactory = MemoryRecordCache.factory();
     if(clock == null)
       throw new IllegalArgumentException("clock cannot be null");
     if(concurrencyMode == null)
       throw new IllegalArgumentException("concurrencyMode cannot be null");
 
 
+    final RecordCacheManager<K, V> recordCacheManager = new RecordCacheManager<>(recordCacheFactory);
     final RecordSender<K, V> sender = new KafkaRecordSender<>(producerProperties, outboundTopic);
-    final RecordHandler<K, V> underlyingRecordHandler = new SingleThreadRecordHandler<>(dedupStrategy, dedupQueue, sender, clock, dedupCompleteListener);
+    final RecordHandler<K, V> underlyingRecordHandler = new SingleThreadRecordHandler<>(dedupStrategy, recordCacheManager, orderedCapture, sender, clock, dedupCompleteListener);
     final RecoveryService recoveryService = new LastRecordRecoveryService(consumerProperties, outboundTopic, inboundTopics.size());
 
     RecordHandler<K, V> recordHandler;

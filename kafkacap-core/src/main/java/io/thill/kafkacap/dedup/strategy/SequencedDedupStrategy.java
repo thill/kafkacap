@@ -26,27 +26,22 @@ import java.util.Set;
  */
 public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V> {
 
-  private static final long DEFAULT_SEQUENCE_GAP_MILLIS = Duration.ofSeconds(10).toMillis();
-
   private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final boolean orderedCapture;
   private final long sequenceGapTimeoutMillis;
   private PartitionContext[] partitionContexts;
   private int numTopics;
 
   /**
-   * SequencedDedupStrategy Constructor that uses a 10 second gap timeout
-   */
-  public SequencedDedupStrategy() {
-    this(DEFAULT_SEQUENCE_GAP_MILLIS);
-  }
-
-  /**
    * SequencedDedupStrategy Constructor that uses the given gap timeout. If all inbound records miss a message, it will be skipped immediately. A gap timeout
    * will only be used when a Capture Device is down and a gap is detected across all remaining streams.
    *
+   * @param orderedCapture           Flags if the inbound capture stream guarantees ordering. If it does, some efficiencies can be gained by being able to
+   *                                 immediately recognize when there is a message gap across all capture streams.
    * @param sequenceGapTimeoutMillis The time that needs to elapsed with a missing message before forcing processing to continue
    */
-  public SequencedDedupStrategy(long sequenceGapTimeoutMillis) {
+  public SequencedDedupStrategy(boolean orderedCapture, long sequenceGapTimeoutMillis) {
+    this.orderedCapture = orderedCapture;
     this.sequenceGapTimeoutMillis = sequenceGapTimeoutMillis;
   }
 
@@ -78,9 +73,9 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
       ctx.nextAvailableSequence = -1;
       ctx.topicsAtNextAvailableSequence.clear();
       ctx.startGapTimestamp = 0;
-      return DedupResult.QUEUE;
+      return DedupResult.CACHE;
     } else {
-      // message is a future sequence, add to queue
+      // message is a future sequence, add to cache
       if(Long.compareUnsigned(sequence, ctx.nextAvailableSequence) < 0) {
         // message is not the next sequence, but represents the next available sequence to be processed: reset the gap timeout and set the nextAvailableSequence
         // note that this INFO might not be logged if this TopicPartition is behind another TopicPartition, but it does provide valuable traceability for sequence gap timeouts
@@ -91,7 +86,8 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
         ctx.topicsAtNextAvailableSequence.add(record.topic());
       } else if(sequence == ctx.nextAvailableSequence) {
         ctx.topicsAtNextAvailableSequence.add(record.topic());
-        if(ctx.topicsAtNextAvailableSequence.size() == numTopics) {
+        // can only take the liberty of immediately recognizing a sequence gap across all streams when the streams guarantee ordering
+        if(orderedCapture && ctx.topicsAtNextAvailableSequence.size() == numTopics) {
           // all topics are missing the same sequences, gap timeout is pointless, send it now and adjust context
           logger.info("All topics for partition {} are missing sequences {} through {}", record.partition(), ctx.nextSequence, ctx.nextAvailableSequence - 1);
           onSequenceGap(record.partition(), ctx.nextSequence, ctx.nextAvailableSequence - 1);
@@ -102,7 +98,7 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
           return DedupResult.SEND;
         }
       }
-      return DedupResult.QUEUE;
+      return DedupResult.CACHE;
     }
   }
 

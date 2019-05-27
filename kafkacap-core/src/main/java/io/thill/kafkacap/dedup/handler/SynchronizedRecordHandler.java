@@ -43,8 +43,8 @@ public class SynchronizedRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
-  public synchronized void tryDequeue(final int partition) {
-    underlyingRecordHandler.tryDequeue(partition);
+  public synchronized void checkCache(final int partition) {
+    underlyingRecordHandler.checkCache(partition);
   }
 
   @Override

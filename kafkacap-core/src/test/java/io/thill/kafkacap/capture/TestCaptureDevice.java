@@ -29,6 +29,8 @@ public class TestCaptureDevice {
     KafkaLite.createTopic(TOPIC, NUM_PARTITIONS);
     queueCaptureDevice = new QueueCaptureDevice(TOPIC, PARTITION);
     queueCaptureDevice.start();
+    while(!queueCaptureDevice.isStarted())
+      Thread.sleep(10);
     consumer = new QueuedKafkaConsumer<>(new TopicPartition(TOPIC, PARTITION), KafkaLite.consumerProperties(ByteArrayDeserializer.class, ByteArrayDeserializer.class));
   }
 

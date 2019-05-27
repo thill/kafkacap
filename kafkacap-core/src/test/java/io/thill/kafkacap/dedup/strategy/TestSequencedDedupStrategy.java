@@ -26,7 +26,7 @@ public class TestSequencedDedupStrategy {
 
   @Before
   public void setup() {
-    strategy = new TestableSequencedDedupStrategy(1000);
+    strategy = new TestableSequencedDedupStrategy(true, 1000);
     strategy.assigned(new Assignment<>(new TreeSet<>(Arrays.asList(PARITION_0, PARITION_1)), 3));
   }
 
@@ -94,7 +94,7 @@ public class TestSequencedDedupStrategy {
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 1)));
     // GAP
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_B, PARITION_0, 4)));
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_B, PARITION_0, 4)));
 
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 2)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 3)));
@@ -119,11 +119,11 @@ public class TestSequencedDedupStrategy {
   public void test_one_partition_all_topics_gap_on_all_topics() {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 1)));
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_A, PARITION_0, 5)));
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_A, PARITION_0, 5)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 1)));
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_C, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_C, PARITION_0, 1)));
@@ -150,21 +150,21 @@ public class TestSequencedDedupStrategy {
   public void test_one_partition_two_topics_gap_timeout() throws InterruptedException {
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_A, PARITION_0, 1)));
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_A, PARITION_0, 5)));
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_A, PARITION_0, 5)));
 
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 0)));
     Assert.assertEquals(DedupResult.DROP, strategy.check(record(TOPIC_B, PARITION_0, 1)));
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
 
-    // immediate call should QUEUE
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
+    // immediate call should CACHE
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
 
     // wait through timeout
     Thread.sleep(1100);
 
     // this call will queue, but trigger the timeout for the next call to complete
     // this is necessary to simplify logic when multiple partitions are missing different sets of sequences
-    Assert.assertEquals(DedupResult.QUEUE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
+    Assert.assertEquals(DedupResult.CACHE, strategy.check(record(TOPIC_B, PARITION_0, 5)));
 
     // same call immediately should SEND
     Assert.assertEquals(DedupResult.SEND, strategy.check(record(TOPIC_B, PARITION_0, 5)));

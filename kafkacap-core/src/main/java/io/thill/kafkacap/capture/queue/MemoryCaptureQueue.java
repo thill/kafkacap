@@ -40,7 +40,7 @@ public class MemoryCaptureQueue implements CaptureQueue {
 
   @Override
   public void add(final byte[] payload, final long enqueueTime) {
-    queue.add(new QueueElement(Arrays.copyOf(payload, payload.length), enqueueTime));
+    add(payload, 0, payload.length, enqueueTime);
   }
 
   @Override

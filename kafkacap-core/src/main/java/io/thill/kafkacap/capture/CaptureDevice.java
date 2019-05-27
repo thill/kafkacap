@@ -44,6 +44,7 @@ public abstract class CaptureDevice implements Runnable, AutoCloseable {
   private final CountDownLatch closeComplete = new CountDownLatch(1);
   private final CaptureDeviceConfig config;
   private final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+  private final AtomicBoolean started = new AtomicBoolean(false);
 
   /**
    * CaptureDevice Constructor
@@ -80,6 +81,7 @@ public abstract class CaptureDevice implements Runnable, AutoCloseable {
       logger.info("Initializing...");
       init();
       logger.info("Initialized");
+      started.set(true);
 
       while(keepRunning.get()) {
         if(poll(bufferedPublisher::write)) {
@@ -156,6 +158,10 @@ public abstract class CaptureDevice implements Runnable, AutoCloseable {
     } catch(Throwable t) {
       logger.error("Could not close " + closeable.getClass().getSimpleName(), t);
     }
+  }
+
+  public boolean isStarted() {
+    return started.get();
   }
 
   @Override

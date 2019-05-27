@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Calls {@link RecordHandler#tryDequeue(int)} periodically based on the current {@link io.thill.kafkacap.dedup.assignment.Assignment}
+ * Calls {@link RecordHandler#checkCache(int)} periodically based on the current {@link io.thill.kafkacap.dedup.assignment.Assignment}
  */
 public class ThrottledDequeuer implements Runnable, AutoCloseable {
 
@@ -67,7 +67,7 @@ public class ThrottledDequeuer implements Runnable, AutoCloseable {
 
         for(int i = 0; i < currentAssignment.size(); i++) {
           final int partition = currentAssignment.getInt(i);
-          handler.tryDequeue(partition);
+          handler.checkCache(partition);
         }
       }
     } catch(Throwable t) {

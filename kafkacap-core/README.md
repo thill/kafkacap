@@ -41,10 +41,10 @@ A Kafka Consumer Group that is responsible for deduplicating messages from redun
 ![Single-Partition](docs/kafkacap_single_partition.png "Single-Partition")
 
 ### DedupStrategy
-Deduplication logic relies on the user's implementation of `io.thill.kafkacap.dedup.strategy.DedupStrategy`. All received messages from all capture topics will be checked by the strategy and must return `SEND`, `DROP`, or `QUEUE`. 
+Deduplication logic relies on the user's implementation of `io.thill.kafkacap.dedup.strategy.DedupStrategy`. All received messages from all capture topics will be checked by the strategy and must return `SEND`, `DROP`, or `CACHE`. 
 * `SEND` - Send this message immediately
 * `DROP` - Drop this messages indefinitely
-* `QUEUE` - Add this message to the back of a per-capture-topic queue, the head of which will be tried again very soon.
+* `CACHE` - Add this message to the back of a per-capture-topic cache, so it can be tried again very soon.
 
 ### SequencedDedupStrategy
 For streams consisting of a sequenced stream of messages, an abstract class called `SequencedDedupStrategy` is provided. The user must simply implement `long parseSequence(ConsumerRecord<K, V> record)` to parse the sequence from the captured messages. 

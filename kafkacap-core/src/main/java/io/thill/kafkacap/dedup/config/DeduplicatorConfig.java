@@ -21,6 +21,7 @@ public class DeduplicatorConfig {
   private List<String> inboundTopics;
   private String outboundTopic;
   private String dedupStrategy;
+  private boolean orderedCapture;
 
   public String getConsumerGroupIdPrefix() {
     return consumerGroupIdPrefix;
@@ -82,6 +83,14 @@ public class DeduplicatorConfig {
     this.dedupStrategy = dedupStrategy;
   }
 
+  public boolean isOrderedCapture() {
+    return orderedCapture;
+  }
+
+  public void setOrderedCapture(boolean orderedCapture) {
+    this.orderedCapture = orderedCapture;
+  }
+
   @Override
   public String toString() {
     return "DeduplicatorConfig{" +
@@ -91,6 +100,7 @@ public class DeduplicatorConfig {
             ", inboundTopics=" + inboundTopics +
             ", outboundTopic='" + outboundTopic + '\'' +
             ", dedupStrategy='" + dedupStrategy + '\'' +
+            ", orderedCapture=" + orderedCapture +
             '}';
   }
 }

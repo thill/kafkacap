@@ -7,9 +7,6 @@ package io.thill.kafkacap.dedup.handler;
 import io.thill.kafkacap.dedup.assignment.Assignment;
 import io.thill.kafkacap.dedup.handler.TestableRecordSender.TestRecord;
 import io.thill.kafkacap.dedup.outbound.RecordSender;
-import io.thill.kafkacap.dedup.queue.MemoryDedupQueue;
-import io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy;
-import io.thill.kafkacap.util.clock.SystemMillisClock;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.After;
 import org.junit.Assert;
@@ -97,7 +94,7 @@ public abstract class AbstractRecordHandlerTest {
     handle(PARTITION_0, 101, TOPIC_1);
     handle(PARTITION_0, 102, TOPIC_1);
 
-    handler.tryDequeue(PARTITION_0);
+    handler.checkCache(PARTITION_0);
 
     Assert.assertEquals("100", sender.poll().value());
     Assert.assertEquals("101", sender.poll().value());
@@ -124,7 +121,7 @@ public abstract class AbstractRecordHandlerTest {
 
     // wait more than timeout, then try dequeue
     Thread.sleep(101);
-    handler.tryDequeue(PARTITION_0);
+    handler.checkCache(PARTITION_0);
 
     // records after gap should have been sent
     Assert.assertEquals("103", sender.poll().value());
@@ -206,7 +203,7 @@ public abstract class AbstractRecordHandlerTest {
     handle(PARTITION_0, 105, TOPIC_2);
 
     // should dequeue immediately without a timeout since gap happened on all streams
-    handler.tryDequeue(PARTITION_0);
+    handler.checkCache(PARTITION_0);
 
     Assert.assertEquals("100", sender.poll().value());
     Assert.assertEquals("103", sender.poll().value());
