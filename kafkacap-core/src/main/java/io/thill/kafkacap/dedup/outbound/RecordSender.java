@@ -34,4 +34,8 @@ public interface RecordSender<K, V> extends AutoCloseable {
    */
   void send(int partition, K key, V value, Headers headers);
 
+  /**
+   * Flush outbound buffers
+   */
+  void flush();
 }

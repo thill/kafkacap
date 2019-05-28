@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
 
   private static final Duration POLL_DURATION = Duration.ofSeconds(1);
+  private static final String DEFAULT_OFFSET_COMMIT_INTERVAL = "10000";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);
@@ -42,6 +43,7 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   private final List<FollowConsumer<K, V>> followConsumers;
   private final ThrottledDequeuer throttledDequeuer;
   private final RecoveryService<K, V> recoveryService;
+  private final long offsetCommitInterval;
 
   /**
    * LeadConsumer Constructor
@@ -69,6 +71,8 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
     this.recoveryService = recoveryService;
     this.consumerProperties = new Properties();
     this.consumerProperties.putAll(consumerProperties);
+    this.consumerProperties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.FALSE.toString());
+    this.offsetCommitInterval = Long.parseLong(consumerProperties.getProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, DEFAULT_OFFSET_COMMIT_INTERVAL));
   }
 
   /**
@@ -81,6 +85,8 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   @Override
   public void run() {
     final KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties);
+    long nextCommitTime = System.currentTimeMillis() + offsetCommitInterval;
+
     try {
       logger.info("Starting {} for topic {}", getClass().getSimpleName(), topic);
       consumer.subscribe(Arrays.asList(topic), rebalanceListener);
@@ -92,6 +98,16 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
           for(ConsumerRecord<K, V> record : records) {
             handler.handle(record, topicIdx);
           }
+        }
+
+        // check commit
+        final long now = System.currentTimeMillis();
+        if(now >= nextCommitTime) {
+          logger.debug("Performing Commit");
+          handler.flush();
+          consumer.commitAsync();
+          logger.debug("Commit Complete");
+          nextCommitTime = now + offsetCommitInterval;
         }
       }
     } finally {

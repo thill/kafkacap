@@ -30,6 +30,11 @@ public interface RecordHandler<K, V> extends AutoCloseable {
   void handle(ConsumerRecord<K, V> record, int topicIdx);
 
   /**
+   * Flush outbound buffers
+   */
+  void flush();
+
+  /**
    * Check cached messages. This is called separate from {@link RecordHandler#handle(ConsumerRecord, int)} so it can be throttled to not impact performance of
    * the normal path.
    *

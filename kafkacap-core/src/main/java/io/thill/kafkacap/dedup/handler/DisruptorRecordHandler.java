@@ -70,6 +70,11 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
+  public void flush() {
+    dispatch(RecordEventType.FLUSH, null, -1, -1, null, true);
+  }
+
+  @Override
   public void checkCache(final int partition) {
     dispatch(RecordEventType.CHECK_CACHE, null, -1, partition, null, false);
   }
@@ -125,6 +130,9 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
         switch(event.type) {
           case HANDLE:
             underlyingRecordHandler.handle(event.record, event.topicIdx);
+            break;
+          case FLUSH:
+            underlyingRecordHandler.flush();
             break;
           case CHECK_CACHE:
             underlyingRecordHandler.checkCache(event.partition);
@@ -191,6 +199,6 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   private enum RecordEventType {
-    START, CLOSE, HANDLE, CHECK_CACHE, ASSIGNED, REVOKED
+    START, CLOSE, HANDLE, CHECK_CACHE, ASSIGNED, REVOKED, FLUSH
   }
 }

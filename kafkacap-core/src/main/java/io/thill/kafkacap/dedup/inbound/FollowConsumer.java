@@ -32,6 +32,7 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   private static final Duration POLL_DURATION = Duration.ofSeconds(1);
   private static final Duration POLL_SLEEP_DURACTION = Duration.ofMillis(250);
   private static final Duration ASSIGN_SLEEP_DURACTION = Duration.ofMillis(10);
+  private static final String DEFAULT_OFFSET_COMMIT_INTERVAL = "10000";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);
@@ -42,6 +43,7 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   private final String topic;
   private final int topicIdx;
   private final RecordHandler<K, V> handler;
+  private final long offsetCommitInterval;
 
   /**
    * FollowConsumer Constructor
@@ -57,6 +59,8 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
     this.handler = handler;
     this.consumerProperties = new Properties();
     this.consumerProperties.putAll(consumerProperties);
+    this.consumerProperties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.FALSE.toString());
+    this.offsetCommitInterval = Long.parseLong(consumerProperties.getProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, DEFAULT_OFFSET_COMMIT_INTERVAL));
   }
 
   /**
@@ -69,6 +73,8 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   @Override
   public void run() {
     final KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties);
+    long nextCommitTime = System.currentTimeMillis() + offsetCommitInterval;
+
     Collection<Integer> currentAssignment = Collections.emptyList();
     try {
       logger.info("Starting {} for topic {}", getClass().getSimpleName(), topic);
@@ -113,6 +119,16 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
           for(ConsumerRecord<K, V> record : records) {
             handler.handle(record, topicIdx);
           }
+        }
+
+        // check commit
+        final long now = System.currentTimeMillis();
+        if(now >= nextCommitTime) {
+          logger.debug("Performing Commit");
+          handler.flush();
+          consumer.commitAsync();
+          logger.debug("Commit Complete");
+          nextCommitTime = now + offsetCommitInterval;
         }
       }
     } catch(Throwable t) {

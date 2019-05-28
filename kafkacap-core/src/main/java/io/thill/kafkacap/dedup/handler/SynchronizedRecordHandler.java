@@ -43,6 +43,11 @@ public class SynchronizedRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
+  public void flush() {
+    underlyingRecordHandler.flush();
+  }
+
+  @Override
   public synchronized void checkCache(final int partition) {
     underlyingRecordHandler.checkCache(partition);
   }
