@@ -11,5 +11,5 @@ inboundTopics:
   - "capture_A"
   - "capture_B"
 outboundTopic: "outbound"
-dedupStrategy: "io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy"
+dedupStrategy: "io.thill.kafkacap.core.dedup.strategy.TestableSequencedDedupStrategy"
 orderedCapture: false

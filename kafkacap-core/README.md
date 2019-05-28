@@ -15,7 +15,7 @@ A Capture process queues messages before writing them to Kafka. This is done to 
 * Chronicle: `ChronicleCaptureQueue` will queue all messages to disk using [Chronicle-Queue](https://github.com/OpenHFT/Chronicle-Queue). Capacity is limited only by available disk space. This implementation is recommended when messages must be captured and buffered in the event of a Kafka Cluster outage.
 
 ### Capture Device
-`io.thill.kafkacap.capture.CaptureDevice` is an abstract class that allows simple plug-and-play of any poll-based receiver. It handles most of the ceremony of creating a typical `BufferedPublisher` with an underlying `ChronicleCaptureQueue`
+`io.thill.kafkacap.core.capture.CaptureDevice` is an abstract class that allows simple plug-and-play of any poll-based receiver. It handles most of the ceremony of creating a typical `BufferedPublisher` with an underlying `ChronicleCaptureQueue`
  
 ### Buffered Publisher
 For additional flexibility, a `BufferedPublisher` can be instantiated and used directly, instead of relying on the abstraction of a `CaptureDevice`.
@@ -37,7 +37,7 @@ A Kafka Consumer Group that is responsible for deduplicating messages from redun
 ![Single-Partition](docs/kafkacap_single_partition.png "Single-Partition")
 
 ### DedupStrategy
-Deduplication logic relies on the user's implementation of `io.thill.kafkacap.dedup.strategy.DedupStrategy`. All received messages from all capture topics will be checked by the strategy and must return `SEND`, `DROP`, or `CACHE`. 
+Deduplication logic relies on the user's implementation of `io.thill.kafkacap.core.dedup.strategy.DedupStrategy`. All received messages from all capture topics will be checked by the strategy and must return `SEND`, `DROP`, or `CACHE`. 
 * `SEND` - Send this message immediately
 * `DROP` - Drop this messages indefinitely
 * `CACHE` - Add this message to a per-capture-topic cache, so it can be tried again very soon.
@@ -84,7 +84,7 @@ inboundTopics:
   - "capture_A"
   - "capture_B"
 outboundTopic: "outbound"
-dedupStrategy: "io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy"
+dedupStrategy: "io.thill.kafkacap.core.dedup.strategy.TestableSequencedDedupStrategy"
 orderedCapture: false
 ```
 

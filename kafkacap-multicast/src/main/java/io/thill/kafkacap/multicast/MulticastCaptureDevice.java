@@ -4,9 +4,9 @@
  */
 package io.thill.kafkacap.multicast;
 
-import io.thill.kafkacap.capture.CaptureDevice;
+import io.thill.kafkacap.core.capture.CaptureDevice;
 import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
-import io.thill.kafkacap.util.io.ResourceLoader;
+import io.thill.kafkacap.core.util.io.ResourceLoader;
 import org.agrona.concurrent.SigInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

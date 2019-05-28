@@ -4,12 +4,12 @@
  */
 package io.thill.kafkacap.multicast;
 
-import io.thill.kafkacap.capture.config.ChronicleConfig;
-import io.thill.kafkacap.capture.config.KafkaConfig;
+import io.thill.kafkacap.core.capture.config.ChronicleConfig;
+import io.thill.kafkacap.core.capture.config.KafkaConfig;
 import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
 import io.thill.kafkacap.multicast.config.MulticastConfig;
-import io.thill.kafkacap.util.constant.RecordHeaderKeys;
-import io.thill.kafkacap.util.io.FileUtil;
+import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.core.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
 import net.openhft.chronicle.queue.RollCycles;
