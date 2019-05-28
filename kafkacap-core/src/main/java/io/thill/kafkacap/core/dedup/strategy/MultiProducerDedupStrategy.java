@@ -5,10 +5,12 @@
 package io.thill.kafkacap.core.dedup.strategy;
 
 import io.thill.kafkacap.core.dedup.assignment.Assignment;
+import oracle.jvm.hotspot.jfr.Producer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -23,10 +25,11 @@ import java.util.concurrent.TimeUnit;
 public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<K, V> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final Map<String, DedupStrategy<K, V>> producerDedupStrategies = new LinkedHashMap<>();
+  private final Map<String, ProducerContext<K, V>> producerContexts = new LinkedHashMap<>();
   private final DedupStrategyFactory<K, V> dedupStrategyFactory;
   private final long producerExpireIntervalMillis;
   private Assignment<K, V> currentAssignment;
+  private long nextExpireCheckTime;
 
   /**
    * Constructor
@@ -39,19 +42,41 @@ public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<
   public MultiProducerDedupStrategy(DedupStrategyFactory<K, V> dedupStrategyFactory, int producerExpireIntervalSeconds) {
     this.dedupStrategyFactory = dedupStrategyFactory;
     this.producerExpireIntervalMillis = TimeUnit.SECONDS.toMillis(producerExpireIntervalSeconds);
+    this.nextExpireCheckTime = System.currentTimeMillis() + producerExpireIntervalMillis;
   }
 
   @Override
   public DedupResult check(ConsumerRecord<K, V> record) {
+    final long now = System.currentTimeMillis();
     final String producerKey = parseProducerKey(record);
-    DedupStrategy<K, V> dedupStrategy = producerDedupStrategies.get(producerKey);
-    if(dedupStrategy == null) {
+
+    // lookup or create producer context
+    ProducerContext<K, V> producerContext = producerContexts.get(producerKey);
+    if(producerContext == null) {
       logger.info("Creating DedupStrategy for Producer {}", producerKey);
-      dedupStrategy = dedupStrategyFactory.create(producerKey);
-      producerDedupStrategies.put(producerKey, dedupStrategy);
-      dedupStrategy.assigned(currentAssignment);
+      producerContext = new ProducerContext<>(dedupStrategyFactory.create(producerKey));
+      producerContexts.put(producerKey, producerContext);
+      producerContext.getDedupStrategy().assigned(currentAssignment);
     }
-    return dedupStrategy.check(record);
+
+    // check result for this producer
+    producerContext.setLastReceivedTimestamp(now);
+    final DedupResult result = producerContext.getDedupStrategy().check(record);
+
+    // check to expire stale producers
+    if(now > nextExpireCheckTime) {
+      final Iterator<Map.Entry<String, ProducerContext<K, V>>> iterator = producerContexts.entrySet().iterator();
+      while(iterator.hasNext()) {
+        final Map.Entry<String, ProducerContext<K, V>> entry = iterator.next();
+        if(entry.getValue().getLastReceivedTimestamp() < now - producerExpireIntervalMillis) {
+          logger.info("Expiring Producer {}", entry.getKey());
+          iterator.remove();
+        }
+      }
+      nextExpireCheckTime = now + producerExpireIntervalMillis;
+    }
+
+    return result;
   }
 
   protected abstract String parseProducerKey(ConsumerRecord<K, V> record);
@@ -63,7 +88,7 @@ public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<
 
   @Override
   public void revoked() {
-    producerDedupStrategies.clear();
+    producerContexts.clear();
   }
 
   /**
@@ -71,5 +96,25 @@ public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<
    */
   public interface DedupStrategyFactory<K, V> {
     DedupStrategy<K, V> create(Object producerKey);
+  }
+
+  private static class ProducerContext<K, V> {
+    private final DedupStrategy<K, V> dedupStrategy;
+    private long lastReceivedTimestamp;
+    public ProducerContext(DedupStrategy<K, V> dedupStrategy) {
+      this.dedupStrategy = dedupStrategy;
+    }
+
+    public DedupStrategy<K, V> getDedupStrategy() {
+      return dedupStrategy;
+    }
+
+    public long getLastReceivedTimestamp() {
+      return lastReceivedTimestamp;
+    }
+
+    public void setLastReceivedTimestamp(long lastReceivedTimestamp) {
+      this.lastReceivedTimestamp = lastReceivedTimestamp;
+    }
   }
 }

@@ -70,6 +70,24 @@ public class TestMultiProducerDedupStrategy {
     Assert.assertEquals(DedupResult.SEND, dedupStrategy.check(record("P1", 10005L)));
   }
 
+  @Test
+  public void testExpireProducer() throws Exception {
+    final TestableMultiProducerDedupStrategy dedupStrategy = new TestableMultiProducerDedupStrategy(1);
+    dedupStrategy.assigned(new Assignment<>(Arrays.asList(0), 2, Collections.emptyMap(), Collections.emptyMap()));
+
+    // send messages once
+    Assert.assertEquals(DedupResult.SEND, dedupStrategy.check(record("P1", 100L)));
+    Assert.assertEquals(DedupResult.SEND, dedupStrategy.check(record("P1", 101L)));
+
+    // wait passed expire time and send on different producer
+    Thread.sleep(1001);
+    Assert.assertEquals(DedupResult.SEND, dedupStrategy.check(record("P2", 10000L)));
+
+    // should be able to reprocess messages due to expired state
+    Assert.assertEquals(DedupResult.SEND, dedupStrategy.check(record("P1", 100L)));
+    Assert.assertEquals(DedupResult.SEND, dedupStrategy.check(record("P1", 101L)));
+  }
+
   private static ConsumerRecord<Long, String> record(String producer, long sequence) {
     return new ConsumerRecord<>("topic", 0, System.currentTimeMillis(), sequence, producer + "," + sequence);
   }

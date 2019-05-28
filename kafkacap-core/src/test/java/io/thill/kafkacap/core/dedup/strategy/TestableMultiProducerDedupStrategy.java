@@ -15,7 +15,11 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 public class TestableMultiProducerDedupStrategy extends MultiProducerDedupStrategy<Long, String> {
 
   public TestableMultiProducerDedupStrategy() {
-    super(key -> new TestableSequencedDedupStrategy(false, 5000, key.toString() + "-"), 20);
+    super(key -> new TestableSequencedDedupStrategy(false, 2000, key.toString() + "-"), 5);
+  }
+
+  public TestableMultiProducerDedupStrategy(int producerExpireIntervalSeconds) {
+    super(key -> new TestableSequencedDedupStrategy(false, 2000, key.toString() + "-"), producerExpireIntervalSeconds);
   }
 
   @Override
