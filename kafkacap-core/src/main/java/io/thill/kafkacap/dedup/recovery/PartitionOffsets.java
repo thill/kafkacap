@@ -16,6 +16,15 @@ import java.util.Map;
  * @author Eric Thill
  */
 public class PartitionOffsets {
+
+  public static PartitionOffsets fromMap(Map<PartitionTopicIdx, Long> map) {
+    final PartitionOffsets partitionOffsets = new PartitionOffsets();
+    for(Map.Entry<PartitionTopicIdx, Long> entry : map.entrySet()) {
+      partitionOffsets.offset(entry.getKey().getPartition(), entry.getKey().getTopicIdx(), entry.getValue());
+    }
+    return partitionOffsets;
+  }
+
   private TopicOffsets[] offsetsPerPartition = new TopicOffsets[0];
 
   /**

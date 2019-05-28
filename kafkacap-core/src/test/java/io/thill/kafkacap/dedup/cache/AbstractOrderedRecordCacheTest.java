@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 
 public abstract class AbstractOrderedRecordCacheTest {
@@ -29,7 +30,7 @@ public abstract class AbstractOrderedRecordCacheTest {
   @Before
   public void setup() {
     cache = new RecordCacheManager<>(createFactory());
-    cache.assigned(new Assignment<>(new LinkedHashSet<>(Arrays.asList(PARTITION_0, PARTITION_1)), NUM_TOPICS));
+    cache.assigned(new Assignment<>(new LinkedHashSet<>(Arrays.asList(PARTITION_0, PARTITION_1)), NUM_TOPICS, Collections.emptyMap(), Collections.emptyMap()));
   }
 
   @Test

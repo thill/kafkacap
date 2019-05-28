@@ -174,7 +174,7 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
       for(FollowConsumer fc : followConsumers) {
         try {
           logger.info("Assigning partitions {} to {}", partitions, fc);
-          fc.assign(partitions, assignment.getOffsets().topicOffsets(fc.getTopicIdx()));
+          fc.assign(partitions, assignment.getOffsetsForTopic(fc.getTopicIdx()));
         } catch(InterruptedException e) {
           logger.error("Exception while assigning to " + fc, e);
         }

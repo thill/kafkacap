@@ -88,7 +88,7 @@ public class TestRecoveryService {
 
     Assignment<String, String> assignment = recoveryService.recover(Arrays.asList(PARTITION_0));
     Assert.assertEquals(1, assignment.getOffsets().size());
-    Assert.assertEquals(100, (long)assignment.getOffsets().getOffset(0, 0));
+    Assert.assertEquals(100, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 0)));
   }
 
   @Test
@@ -103,9 +103,9 @@ public class TestRecoveryService {
 
     Assignment<String, String> assignment = recoveryService.recover(Arrays.asList(PARTITION_0));
     Assert.assertEquals(3, assignment.getOffsets().size());
-    Assert.assertEquals(100, (long)assignment.getOffsets().getOffset(0, 0));
-    Assert.assertEquals(200, (long)assignment.getOffsets().getOffset(0, 1));
-    Assert.assertEquals(311, (long)assignment.getOffsets().getOffset(0, 2));
+    Assert.assertEquals(100, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 0)));
+    Assert.assertEquals(200, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 1)));
+    Assert.assertEquals(311, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 2)));
   }
 
   @Test
@@ -128,9 +128,9 @@ public class TestRecoveryService {
 
     Assignment<String, String> assignment = recoveryService.recover(Arrays.asList(PARTITION_0));
     Assert.assertEquals(3, assignment.getOffsets().size());
-    Assert.assertEquals(101, (long)assignment.getOffsets().getOffset(0, 0));
-    Assert.assertEquals(201, (long)assignment.getOffsets().getOffset(0, 1));
-    Assert.assertEquals(312, (long)assignment.getOffsets().getOffset(0, 2));
+    Assert.assertEquals(101, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 0)));
+    Assert.assertEquals(201, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 1)));
+    Assert.assertEquals(312, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 2)));
   }
 
   @Test
@@ -165,10 +165,10 @@ public class TestRecoveryService {
 
     Assignment<String, String> assignment = recoveryService.recover(Arrays.asList(PARTITION_0, PARTITION_1));
     Assert.assertEquals(4, assignment.getOffsets().size());
-    Assert.assertEquals(101, (long)assignment.getOffsets().getOffset(0, 0));
-    Assert.assertEquals(201, (long)assignment.getOffsets().getOffset(0, 1));
-    Assert.assertEquals(312, (long)assignment.getOffsets().getOffset(0, 2));
-    Assert.assertEquals(1001, (long)assignment.getOffsets().getOffset(1, 0));
+    Assert.assertEquals(101, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 0)));
+    Assert.assertEquals(201, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 1)));
+    Assert.assertEquals(312, (long)assignment.getOffsets().get(new PartitionTopicIdx(0, 2)));
+    Assert.assertEquals(1001, (long)assignment.getOffsets().get(new PartitionTopicIdx(1, 0)));
   }
 
   private void send(int partition, TopicOffset... topicOffsets) {

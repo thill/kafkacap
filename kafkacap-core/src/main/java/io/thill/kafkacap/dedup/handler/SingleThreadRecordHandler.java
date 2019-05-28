@@ -220,7 +220,7 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
   @Override
   public void assigned(final Assignment<K, V> assignment) {
     this.numTopics = assignment.getNumTopics();
-    this.offsets = assignment.getOffsets();
+    this.offsets = PartitionOffsets.fromMap(assignment.getOffsets());
     sender.open();
     recordCacheManager.assigned(assignment);
     dedupStrategy.assigned(assignment);

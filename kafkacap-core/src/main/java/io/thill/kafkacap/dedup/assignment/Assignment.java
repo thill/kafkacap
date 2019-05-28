@@ -4,10 +4,13 @@
  */
 package io.thill.kafkacap.dedup.assignment;
 
-import io.thill.kafkacap.dedup.recovery.PartitionOffsets;
+import io.thill.kafkacap.dedup.recovery.PartitionTopicIdx;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Encapsulates all information required for a partition assignment event
@@ -17,20 +20,24 @@ import java.util.*;
  * @author Eric Thill
  */
 public class Assignment<K, V> {
-  private final Map<Integer, ConsumerRecord<K, V>> lastOutboundRecords = new LinkedHashMap<>();
-  private final PartitionOffsets offsets = new PartitionOffsets();
   private final Collection<Integer> partitions;
   private final int numTopics;
+  private final Map<Integer, ConsumerRecord<K, V>> lastOutboundRecords;
+  private final Map<PartitionTopicIdx, Long> offsets;
 
   /**
    * Assignment Constructor
    *
-   * @param partitions The partitions that have been assigned
-   * @param numTopics  The total number of inbound topics that will be listened to (totalInboundPartitions = partitions.size() * numTopics)
+   * @param partitions          The partitions that have been assigned
+   * @param numTopics           The total number of inbound topics that will be listened to (totalInboundPartitions = partitions.size() * numTopics)
+   * @param lastOutboundRecords Map of partitions to last published record
+   * @param offsets             Map of partition+topicIdx to inbound offsets
    */
-  public Assignment(Collection<Integer> partitions, int numTopics) {
-    this.partitions = partitions;
+  public Assignment(Collection<Integer> partitions, int numTopics, Map<Integer, ConsumerRecord<K, V>> lastOutboundRecords, Map<PartitionTopicIdx, Long> offsets) {
+    this.partitions = Collections.unmodifiableCollection(partitions);
     this.numTopics = numTopics;
+    this.lastOutboundRecords = Collections.unmodifiableMap(lastOutboundRecords);
+    this.offsets = Collections.unmodifiableMap(offsets);
   }
 
   /**
@@ -52,17 +59,6 @@ public class Assignment<K, V> {
   }
 
   /**
-   * Set the last outbound record for a particular partition. This method must never be called by consumers of {@link Assignment}. It is meant as a utility
-   * method for constructing this class.
-   *
-   * @param partition The partition
-   * @param record    The record for this partition
-   */
-  public void setLastOutboundRecord(int partition, ConsumerRecord<K, V> record) {
-    lastOutboundRecords.put(partition, record);
-  }
-
-  /**
    * Get the last outbound record for a particular partition
    *
    * @param partition The partition
@@ -77,8 +73,24 @@ public class Assignment<K, V> {
    *
    * @return The inbound topic-partition offsets for the capture topics
    */
-  public PartitionOffsets getOffsets() {
+  public Map<PartitionTopicIdx, Long> getOffsets() {
     return offsets;
+  }
+
+  /**
+   * Get the inbound partition offsets for the given topicIdx
+   *
+   * @param topicIdx The topicIdx
+   * @return The inbound partition offsets for the given topicIdx
+   */
+  public Map<Integer, Long> getOffsetsForTopic(int topicIdx) {
+    final Map<Integer, Long> result = new LinkedHashMap<>();
+    for(Map.Entry<PartitionTopicIdx, Long> e : offsets.entrySet()) {
+      if(e.getKey().getTopicIdx() == topicIdx) {
+        result.put(e.getKey().getPartition(), e.getValue());
+      }
+    }
+    return Collections.unmodifiableMap(result);
   }
 
   /**
@@ -88,7 +100,10 @@ public class Assignment<K, V> {
    */
   public String toPrettyString() {
     StringBuilder sb = new StringBuilder("Assignment: {");
-    sb.append("\n").append(offsets.toPrettyString());
+    sb.append("\nOffsets:");
+    for(Map.Entry<PartitionTopicIdx, Long> e : offsets.entrySet()) {
+      sb.append("\n  Partition ").append(e.getKey().getPartition()).append(" | TopicIdx ").append(e.getKey().getTopicIdx()).append(" : ").append(e.getValue());
+    }
     sb.append("\nPartitions: ").append(partitions);
     sb.append("\nNumTopics: ").append(numTopics);
     sb.append("\nRecords: ");

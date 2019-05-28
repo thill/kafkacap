@@ -17,9 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * A {@link RecoveryService} implementation that is populated by polling the last record from the outbound topic
@@ -58,14 +56,15 @@ public class LastRecordRecoveryService<K, V> implements RecoveryService<K, V> {
   @Override
   public Assignment<K, V> recover(Collection<Integer> partitions) {
     logger.info("Polling last records for partitions {}", partitions);
-    final Assignment assignment = new Assignment(partitions, numInboundTopics);
+    final Map<Integer, ConsumerRecord<K, V>> lastOutboundRecords = new LinkedHashMap<>();
+    final Map<PartitionTopicIdx, Long> offsets = new LinkedHashMap<>();
 
     for(final int partition : partitions) {
       final TopicPartition topicPartition = new TopicPartition(outboundTopic, partition);
       logger.info("Polling last record from {}", topicPartition);
-      try(KafkaConsumer<byte[], byte[]> consumer = new KafkaConsumer<>(consumerProperties)) {
+      try(KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties)) {
         consumer.assign(Arrays.asList(topicPartition));
-        ConsumerRecords<?, ?> records = ConsumerRecords.empty();
+        ConsumerRecords<K, V> records = ConsumerRecords.empty();
         while(records.isEmpty()) {
           consumer.seekToBeginning(Arrays.asList(topicPartition));
           final long startPosition = consumer.position(topicPartition);
@@ -86,21 +85,22 @@ public class LastRecordRecoveryService<K, V> implements RecoveryService<K, V> {
         }
 
         if(!records.isEmpty()) {
-          final ConsumerRecord<?, ?> record = records.iterator().next();
-          assignment.setLastOutboundRecord(record.partition(), record);
+          final ConsumerRecord<K, V> record = records.iterator().next();
+          lastOutboundRecords.put(record.partition(), record);
           logger.info("Parsing offsets from {}", record.headers());
           for(Header header : record.headers()) {
             if(header.key().startsWith(RecordHeaderKeys.HEADER_KEY_DEDUP_OFFSET_PREFIX)) {
               final int topicIdx = Integer.parseInt(header.key().substring(RecordHeaderKeys.HEADER_KEY_DEDUP_OFFSET_PREFIX.length()));
               final long offset = BitUtil.bytesToLong(header.value());
               logger.info("Recovered: partition={} topicIdx={} offset={}", partition, topicIdx, offset);
-              assignment.getOffsets().offset(partition, topicIdx, offset);
+              offsets.put(new PartitionTopicIdx(partition, topicIdx), offset);
             }
           }
         }
       }
     }
 
+    final Assignment assignment = new Assignment(partitions, numInboundTopics, lastOutboundRecords, offsets);
     logger.info("Recovered {}", assignment.toPrettyString());
     return assignment;
   }

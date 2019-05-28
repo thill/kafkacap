@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.TreeSet;
 
 public class TestSequencedDedupStrategy {
@@ -27,7 +28,7 @@ public class TestSequencedDedupStrategy {
   @Before
   public void setup() {
     strategy = new TestableSequencedDedupStrategy(true, 1000);
-    strategy.assigned(new Assignment<>(new TreeSet<>(Arrays.asList(PARITION_0, PARITION_1)), 3));
+    strategy.assigned(new Assignment<>(new TreeSet<>(Arrays.asList(PARITION_0, PARITION_1)), 3, Collections.emptyMap(), Collections.emptyMap()));
   }
 
   @Test

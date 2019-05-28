@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 public abstract class AbstractRecordHandlerTest {
 
@@ -34,7 +35,7 @@ public abstract class AbstractRecordHandlerTest {
     sender = new TestableRecordSender();
     handler = createRecordHandler(sender);
     handler.start();
-    handler.assigned(new Assignment<>(Arrays.asList(PARTITION_0, PARTITION_1), NUM_TOPICS));
+    handler.assigned(new Assignment<>(Arrays.asList(PARTITION_0, PARTITION_1), NUM_TOPICS, Collections.emptyMap(), Collections.emptyMap()));
   }
 
   @After
