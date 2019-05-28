@@ -78,6 +78,7 @@ inboundTopics:
   - "capture_B"
 outboundTopic: "outbound"
 dedupStrategy: "io.thill.kafkacap.dedup.strategy.TestableSequencedDedupStrategy"
+orderedCapture: false
 ```
 
 ## Builder
