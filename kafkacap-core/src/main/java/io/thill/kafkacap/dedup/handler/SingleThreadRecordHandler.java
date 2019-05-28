@@ -97,7 +97,11 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
         addToCache(record, topicIdx);
         break;
     }
+  }
 
+  @Override
+  public void flush() {
+    sender.flush();
   }
 
   @Override

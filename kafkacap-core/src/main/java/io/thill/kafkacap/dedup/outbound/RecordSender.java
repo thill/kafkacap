@@ -33,4 +33,9 @@ public interface RecordSender<K, V> extends AutoCloseable {
    * @param headers   The {@link org.apache.kafka.clients.producer.ProducerRecord} headers
    */
   void send(int partition, K key, V value, Headers headers);
+
+  /**
+   * Flush outbound buffers
+   */
+  void flush();
 }

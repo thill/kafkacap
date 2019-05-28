@@ -70,6 +70,11 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
+  public void flush() {
+    dispatch(RecordEventType.FLUSH, null, -1, -1, null, true);
+  }
+
+  @Override
   public void checkCache(final int partition) {
     dispatch(RecordEventType.CHECK_CACHE, null, -1, partition, null, false);
   }
@@ -103,13 +108,13 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
     ringBuffer.publish(seq);
 
     if(block) {
-      logger.info("Dispatched {} Event - Awaiting Completion...", type);
+      logger.debug("Dispatched {} Event - Awaiting Completion...", type);
       try {
         completeLatch.await();
       } catch(InterruptedException e) {
         logger.error("Interrupted waiting for revoke to complete", e);
       }
-      logger.info("{} Event Complete", type);
+      logger.debug("{} Event Complete", type);
     }
   }
 
@@ -125,6 +130,9 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
         switch(event.type) {
           case HANDLE:
             underlyingRecordHandler.handle(event.record, event.topicIdx);
+            break;
+          case FLUSH:
+            underlyingRecordHandler.flush();
             break;
           case CHECK_CACHE:
             underlyingRecordHandler.checkCache(event.partition);
@@ -191,6 +199,6 @@ public class DisruptorRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   private enum RecordEventType {
-    START, CLOSE, HANDLE, CHECK_CACHE, ASSIGNED, REVOKED;
+    START, CLOSE, HANDLE, CHECK_CACHE, ASSIGNED, REVOKED, FLUSH
   }
 }

@@ -7,10 +7,7 @@ package io.thill.kafkacap.dedup.inbound;
 import io.thill.kafkacap.dedup.handler.RecordHandler;
 import io.thill.kafkacap.dedup.assignment.Assignment;
 import io.thill.kafkacap.dedup.recovery.RecoveryService;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -31,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
 
   private static final Duration POLL_DURATION = Duration.ofSeconds(1);
+  private static final String DEFAULT_OFFSET_COMMIT_INTERVAL = "10000";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final AtomicBoolean keepRunning = new AtomicBoolean(true);
@@ -44,6 +43,7 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   private final List<FollowConsumer<K, V>> followConsumers;
   private final ThrottledDequeuer throttledDequeuer;
   private final RecoveryService<K, V> recoveryService;
+  private final long offsetCommitInterval;
 
   /**
    * LeadConsumer Constructor
@@ -63,13 +63,16 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
                       List<FollowConsumer<K, V>> followConsumers,
                       ThrottledDequeuer throttledDequeuer,
                       RecoveryService<K, V> recoveryService) {
-    this.consumerProperties = consumerProperties;
     this.topic = topic;
     this.topicIdx = topicIdx;
     this.handler = handler;
     this.followConsumers = followConsumers;
     this.throttledDequeuer = throttledDequeuer;
     this.recoveryService = recoveryService;
+    this.consumerProperties = new Properties();
+    this.consumerProperties.putAll(consumerProperties);
+    this.consumerProperties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.FALSE.toString());
+    this.offsetCommitInterval = Long.parseLong(consumerProperties.getProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, DEFAULT_OFFSET_COMMIT_INTERVAL));
   }
 
   /**
@@ -82,16 +85,29 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   @Override
   public void run() {
     final KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties);
+    long nextCommitTime = System.currentTimeMillis() + offsetCommitInterval;
+
     try {
       logger.info("Starting {} for topic {}", getClass().getSimpleName(), topic);
       consumer.subscribe(Arrays.asList(topic), rebalanceListener);
       logger.info("Entering Poll Loop");
       while(keepRunning.get()) {
+        // poll and handle records
         final ConsumerRecords<K, V> records = consumer.poll(POLL_DURATION);
         if(!records.isEmpty()) {
           for(ConsumerRecord<K, V> record : records) {
             handler.handle(record, topicIdx);
           }
+        }
+
+        // check commit
+        final long now = System.currentTimeMillis();
+        if(now >= nextCommitTime) {
+          logger.debug("Performing Commit");
+          handler.flush();
+          consumer.commitAsync();
+          logger.debug("Commit Complete");
+          nextCommitTime = now + offsetCommitInterval;
         }
       }
     } finally {

@@ -53,6 +53,11 @@ public class KafkaRecordSender<K, V> implements RecordSender<K, V> {
   }
 
   @Override
+  public void flush() {
+    producer.flush();
+  }
+
+  @Override
   public String toString() {
     return "KafkaRecordSender{" +
             "topic='" + topic + '\'' +
