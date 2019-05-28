@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<K, V> {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final Map<Object, DedupStrategy<K, V>> producerDedupStrategies = new LinkedHashMap<>();
+  private final Map<String, DedupStrategy<K, V>> producerDedupStrategies = new LinkedHashMap<>();
   private final DedupStrategyFactory<K, V> dedupStrategyFactory;
   private final long producerExpireIntervalMillis;
   private Assignment<K, V> currentAssignment;
@@ -43,7 +43,7 @@ public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<
 
   @Override
   public DedupResult check(ConsumerRecord<K, V> record) {
-    final Object producerKey = parseProducerKey(record);
+    final String producerKey = parseProducerKey(record);
     DedupStrategy<K, V> dedupStrategy = producerDedupStrategies.get(producerKey);
     if(dedupStrategy == null) {
       logger.info("Creating DedupStrategy for Producer {}", producerKey);
@@ -54,7 +54,7 @@ public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<
     return dedupStrategy.check(record);
   }
 
-  protected abstract Object parseProducerKey(ConsumerRecord<K, V> record);
+  protected abstract String parseProducerKey(ConsumerRecord<K, V> record);
 
   @Override
   public void assigned(Assignment<K, V> assignment) {

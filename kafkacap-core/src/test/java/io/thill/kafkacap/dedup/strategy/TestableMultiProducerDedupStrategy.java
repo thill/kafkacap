@@ -19,7 +19,7 @@ public class TestableMultiProducerDedupStrategy extends MultiProducerDedupStrate
   }
 
   @Override
-  protected Object parseProducerKey(ConsumerRecord<Long, String> record) {
+  protected String parseProducerKey(ConsumerRecord<Long, String> record) {
     return record.value().split(",")[0];
   }
 

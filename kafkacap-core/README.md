@@ -51,9 +51,8 @@ Notes:
 
 ### MultiProducerDedupStreategy
 For physical streams consisting of multiple logical streams, where ordering is only guaranteed per inbound producer, an abstract class called `MultiProducerDedupStreategy` is provided.
-The user must simply implement `Object parseProducerKey(ConsumerRecord<K, V> record)` to parse a producer key.  
+The user must simply implement `String parseProducerKey(ConsumerRecord<K, V> record)` to parse a producer key.  
 Notes:
-* The user-created Producer Key must implement `hashCode()` and `equals()`
 * A separate underlying DedupStrategy will be created per producer using the given `DedupStrategyFactory`
 
 ### Kafka Partitions
