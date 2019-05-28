@@ -13,7 +13,6 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +28,7 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final boolean orderedCapture;
   private final long sequenceGapTimeoutMillis;
+  private final String headerPrefix;
   private PartitionContext[] partitionContexts;
   private int numTopics;
 
@@ -39,10 +39,12 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
    * @param orderedCapture           Flags if the inbound capture stream guarantees ordering. If it does, some efficiencies can be gained by being able to
    *                                 immediately recognize when there is a message gap across all capture streams.
    * @param sequenceGapTimeoutMillis The time that needs to elapsed with a missing message before forcing processing to continue
+   * @param headerPrefix             The prefix to use for all kafka headers
    */
-  public SequencedDedupStrategy(boolean orderedCapture, long sequenceGapTimeoutMillis) {
+  public SequencedDedupStrategy(boolean orderedCapture, long sequenceGapTimeoutMillis, String headerPrefix) {
     this.orderedCapture = orderedCapture;
     this.sequenceGapTimeoutMillis = sequenceGapTimeoutMillis;
+    this.headerPrefix = headerPrefix;
   }
 
   @Override
@@ -116,8 +118,8 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
   public void populateHeaders(ConsumerRecord<K, V> inboundRecord, RecordHeaders outboundHeaders) {
     final long sequence = parseSequence(inboundRecord);
     final long sequenceDelta = parseSequenceDelta(inboundRecord);
-    outboundHeaders.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE, BitUtil.longToBytes(sequence));
-    outboundHeaders.add(RecordHeaderKeys.HEADER_KEY_DEDUP_NUM_SEQUENCES, BitUtil.longToBytes(sequenceDelta));
+    outboundHeaders.add(headerPrefix + RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE, BitUtil.longToBytes(sequence));
+    outboundHeaders.add(headerPrefix + RecordHeaderKeys.HEADER_KEY_DEDUP_NUM_SEQUENCES, BitUtil.longToBytes(sequenceDelta));
   }
 
   /**
@@ -148,18 +150,28 @@ public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V
       for(Integer partition : assignment.getPartitions()) {
         partitionContexts[partition] = new PartitionContext();
         final ConsumerRecord<K, V> lastRecord = assignment.getLastOutboundRecord(partition);
-        final Header sequenceHeader = lastRecord != null ? lastRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE) : null;
+        final Header sequenceHeader = lastRecord != null ? lastRecord.headers().lastHeader(headerPrefix + RecordHeaderKeys.HEADER_KEY_DEDUP_SEQUENCE) : null;
         if(sequenceHeader != null) {
-          final Header numSequencesHeader = lastRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_DEDUP_NUM_SEQUENCES);
+          final Header numSequencesHeader = lastRecord.headers().lastHeader(headerPrefix + RecordHeaderKeys.HEADER_KEY_DEDUP_NUM_SEQUENCES);
           final long nextSequence = BitUtil.bytesToLong(sequenceHeader.value()) + BitUtil.bytesToLong(numSequencesHeader.value());
           logger.info("Partition {} recovered next sequence: {}", partition, nextSequence);
-          partitionContexts[partition].nextSequence = nextSequence;
-          partitionContexts[partition].nextSequenceNull = false;
+          setNextSequence(partition, nextSequence);
         } else {
           logger.info("No sequence to recover");
         }
       }
     }
+  }
+
+  /**
+   * Set the next expected sequence for the given partition
+   *
+   * @param partition    The partition to set the sequence for
+   * @param nextSequence The next expected sequence
+   */
+  protected void setNextSequence(int partition, long nextSequence) {
+    partitionContexts[partition].nextSequence = nextSequence;
+    partitionContexts[partition].nextSequenceNull = false;
   }
 
   @Override

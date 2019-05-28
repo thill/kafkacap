@@ -13,11 +13,15 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Long,
   private Long lastGapToSequence;
 
   public TestableSequencedDedupStrategy() {
-    this(false, 5000);
+    this(false, 5000, "");
   }
 
   public TestableSequencedDedupStrategy(boolean orderedCapture, long sequenceGapTimeoutMillis) {
-    super(orderedCapture, sequenceGapTimeoutMillis);
+    this(orderedCapture, sequenceGapTimeoutMillis, "");
+  }
+
+  public TestableSequencedDedupStrategy(boolean orderedCapture, long sequenceGapTimeoutMillis, String headerPrefix) {
+    super(orderedCapture, sequenceGapTimeoutMillis, headerPrefix);
   }
 
   @Override

@@ -6,7 +6,6 @@ package io.thill.kafkacap.dedup.strategy;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.apache.zookeeper.Testable;
 
 /**
  * TestableMultiProducerDedupStrategy
@@ -16,7 +15,7 @@ import org.apache.zookeeper.Testable;
 public class TestableMultiProducerDedupStrategy extends MultiProducerDedupStrategy<Long, String> {
 
   public TestableMultiProducerDedupStrategy() {
-    super(key -> new TestableSequencedDedupStrategy(), 20);
+    super(key -> new TestableSequencedDedupStrategy(false, 5000, key.toString() + "-"), 20);
   }
 
   @Override

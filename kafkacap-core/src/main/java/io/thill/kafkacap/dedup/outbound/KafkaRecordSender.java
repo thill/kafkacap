@@ -54,7 +54,9 @@ public class KafkaRecordSender<K, V> implements RecordSender<K, V> {
 
   @Override
   public void flush() {
-    producer.flush();
+    if(producer != null) {
+      producer.flush();
+    }
   }
 
   @Override
