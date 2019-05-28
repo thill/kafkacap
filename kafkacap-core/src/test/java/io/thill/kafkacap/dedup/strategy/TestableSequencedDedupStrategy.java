@@ -12,6 +12,10 @@ public class TestableSequencedDedupStrategy extends SequencedDedupStrategy<Long,
   private Long lastGapFromSequence;
   private Long lastGapToSequence;
 
+  public TestableSequencedDedupStrategy() {
+    this(false, 5000);
+  }
+
   public TestableSequencedDedupStrategy(boolean orderedCapture, long sequenceGapTimeoutMillis) {
     super(orderedCapture, sequenceGapTimeoutMillis);
   }
