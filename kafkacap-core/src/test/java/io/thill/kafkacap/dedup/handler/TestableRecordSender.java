@@ -39,11 +39,6 @@ public class TestableRecordSender implements RecordSender<Long, String> {
     queue.add(new TestRecord(partition, key, value));
   }
 
-  @Override
-  public void flush() {
-
-  }
-
   public static class TestRecord {
     private final int partition;
     private final Long key;

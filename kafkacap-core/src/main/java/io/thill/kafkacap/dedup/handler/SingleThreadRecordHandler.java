@@ -100,11 +100,6 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
   }
 
   @Override
-  public void flush() {
-    sender.flush();
-  }
-
-  @Override
   public void checkCache(final int partition) {
     if(orderedCapture) {
       checkCacheOrdered(partition);
