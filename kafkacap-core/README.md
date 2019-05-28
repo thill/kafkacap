@@ -43,10 +43,18 @@ Deduplication logic relies on the user's implementation of `io.thill.kafkacap.de
 * `CACHE` - Add this message to a per-capture-topic cache, so it can be tried again very soon.
 
 ### SequencedDedupStrategy
-For streams consisting of a sequenced stream of messages, an abstract class called `SequencedDedupStrategy` is provided. The user must simply implement `long parseSequence(ConsumerRecord<K, V> record)` to parse the sequence from the captured messages. 
+For streams consisting of a sequenced stream of messages, an abstract class called `SequencedDedupStrategy` is provided. 
+The user must simply implement `long parseSequence(ConsumerRecord<K, V> record)` to parse the sequence from the captured messages. 
 Notes:
 * The sequence is assumed to be unsigned
-* Each partition in the topic is assumed to be a separate stream of sequenced messages 
+* Each partition in the topic is assumed to be a separate stream of sequenced messages
+
+### MultiProducerDedupStreategy
+For physical streams consisting of multiple logical streams, where ordering is only guaranteed per inbound producer, an abstract class called `MultiProducerDedupStreategy` is provided.
+The user must simply implement `Object parseProducerKey(ConsumerRecord<K, V> record)` to parse a producer key.  
+Notes:
+* The user-created Producer Key must implement `hashCode()` and `equals()`
+* A separate underlying DedupStrategy will be created per producer using the given `DedupStrategyFactory`
 
 ### Kafka Partitions
 As far as the deduplicator is concerend, inboundPartition == outboundPartition, and messages will be published as such. For situations where `numPartitions > 0`, `DedupStrategy` implementations must take care of all per-partition logic by checking the `ConsumerRecord`'s partition.
