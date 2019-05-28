@@ -43,24 +43,24 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   private final String topic;
   private final int topicIdx;
   private final RecordHandler<K, V> handler;
-  private final long offsetCommitInterval;
+  private final long manualCommitIntervalMs;
 
   /**
    * FollowConsumer Constructor
    *
-   * @param consumerProperties The properties used to instantiate the underling {@link KafkaConsumer}
-   * @param topic              The inbound kafka topic
-   * @param topicIdx           The index assigned to the inbound kafka topic
-   * @param handler            The handler used to dispatch all received records
+   * @param consumerProperties     The properties used to instantiate the underling {@link KafkaConsumer}
+   * @param topic                  The inbound kafka topic
+   * @param topicIdx               The index assigned to the inbound kafka topic
+   * @param handler                The handler used to dispatch all received records
+   * @param manualCommitIntervalMs The interval to manually call {@link KafkaConsumer#commitAsync()}. Set to 0 to disable. Using this interval instead of *
+   *                               auto.commit will flush outbound buffers/producers before calling commit.
    */
-  public FollowConsumer(Properties consumerProperties, String topic, int topicIdx, RecordHandler<K, V> handler) {
+  public FollowConsumer(Properties consumerProperties, String topic, int topicIdx, RecordHandler<K, V> handler, long manualCommitIntervalMs) {
+    this.consumerProperties = consumerProperties;
     this.topic = topic;
     this.topicIdx = topicIdx;
     this.handler = handler;
-    this.consumerProperties = new Properties();
-    this.consumerProperties.putAll(consumerProperties);
-    this.consumerProperties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.FALSE.toString());
-    this.offsetCommitInterval = Long.parseLong(consumerProperties.getProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, DEFAULT_OFFSET_COMMIT_INTERVAL));
+    this.manualCommitIntervalMs = manualCommitIntervalMs;
   }
 
   /**
@@ -73,7 +73,7 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
   @Override
   public void run() {
     final KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties);
-    long nextCommitTime = System.currentTimeMillis() + offsetCommitInterval;
+    long nextCommitTime = System.currentTimeMillis() + manualCommitIntervalMs;
 
     Collection<Integer> currentAssignment = Collections.emptyList();
     try {
@@ -122,13 +122,15 @@ public class FollowConsumer<K, V> implements Runnable, AutoCloseable {
         }
 
         // check commit
-        final long now = System.currentTimeMillis();
-        if(now >= nextCommitTime) {
-          logger.debug("Performing Commit");
-          handler.flush();
-          consumer.commitAsync();
-          logger.debug("Commit Complete");
-          nextCommitTime = now + offsetCommitInterval;
+        if(manualCommitIntervalMs > 0) {
+          final long now = System.currentTimeMillis();
+          if(now >= nextCommitTime) {
+            logger.debug("Performing Commit");
+            handler.flush();
+            consumer.commitAsync();
+            logger.debug("Commit Complete");
+            nextCommitTime = now + manualCommitIntervalMs;
+          }
         }
       }
     } catch(Throwable t) {

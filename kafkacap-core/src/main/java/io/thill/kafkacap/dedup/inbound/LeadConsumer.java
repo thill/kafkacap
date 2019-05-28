@@ -43,18 +43,20 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   private final List<FollowConsumer<K, V>> followConsumers;
   private final ThrottledDequeuer throttledDequeuer;
   private final RecoveryService<K, V> recoveryService;
-  private final long offsetCommitInterval;
+  private final long manualCommitIntervalMs;
 
   /**
    * LeadConsumer Constructor
    *
-   * @param consumerProperties The properties used to instantiate the underling {@link KafkaConsumer}
-   * @param topic              The inbound kafka topic
-   * @param topicIdx           The index assigned to the inbound kafka topic
-   * @param handler            The handler used to dispatch all received records
-   * @param followConsumers    The follow consumers that require partition assignment callbacks
-   * @param throttledDequeuer  The throttled dequerer that requires partition assignment callbacks
-   * @param recoveryService    The recovery service used to poll last published records for all assignment partitions
+   * @param consumerProperties     The properties used to instantiate the underling {@link KafkaConsumer}
+   * @param topic                  The inbound kafka topic
+   * @param topicIdx               The index assigned to the inbound kafka topic
+   * @param handler                The handler used to dispatch all received records
+   * @param followConsumers        The follow consumers that require partition assignment callbacks
+   * @param throttledDequeuer      The throttled dequerer that requires partition assignment callbacks
+   * @param recoveryService        The recovery service used to poll last published records for all assignment partitions
+   * @param manualCommitIntervalMs The interval to manually call {@link KafkaConsumer#commitAsync()}. Set to 0 to disable. Using this interval instead of
+   *                               auto.commit will flush outbound buffers/producers before calling commit.
    */
   public LeadConsumer(Properties consumerProperties,
                       String topic,
@@ -62,17 +64,16 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
                       RecordHandler<K, V> handler,
                       List<FollowConsumer<K, V>> followConsumers,
                       ThrottledDequeuer throttledDequeuer,
-                      RecoveryService<K, V> recoveryService) {
+                      RecoveryService<K, V> recoveryService,
+                      long manualCommitIntervalMs) {
+    this.consumerProperties = consumerProperties;
     this.topic = topic;
     this.topicIdx = topicIdx;
     this.handler = handler;
     this.followConsumers = followConsumers;
     this.throttledDequeuer = throttledDequeuer;
     this.recoveryService = recoveryService;
-    this.consumerProperties = new Properties();
-    this.consumerProperties.putAll(consumerProperties);
-    this.consumerProperties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.FALSE.toString());
-    this.offsetCommitInterval = Long.parseLong(consumerProperties.getProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, DEFAULT_OFFSET_COMMIT_INTERVAL));
+    this.manualCommitIntervalMs = manualCommitIntervalMs;
   }
 
   /**
@@ -85,7 +86,7 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
   @Override
   public void run() {
     final KafkaConsumer<K, V> consumer = new KafkaConsumer<>(consumerProperties);
-    long nextCommitTime = System.currentTimeMillis() + offsetCommitInterval;
+    long nextCommitTime = System.currentTimeMillis() + manualCommitIntervalMs;
 
     try {
       logger.info("Starting {} for topic {}", getClass().getSimpleName(), topic);
@@ -101,13 +102,15 @@ public class LeadConsumer<K, V> implements Runnable, AutoCloseable {
         }
 
         // check commit
-        final long now = System.currentTimeMillis();
-        if(now >= nextCommitTime) {
-          logger.debug("Performing Commit");
-          handler.flush();
-          consumer.commitAsync();
-          logger.debug("Commit Complete");
-          nextCommitTime = now + offsetCommitInterval;
+        if(manualCommitIntervalMs > 0) {
+          final long now = System.currentTimeMillis();
+          if(now >= nextCommitTime) {
+            logger.debug("Performing Commit");
+            handler.flush();
+            consumer.commitAsync();
+            logger.debug("Commit Complete");
+            nextCommitTime = now + manualCommitIntervalMs;
+          }
         }
       }
     } finally {

@@ -47,6 +47,7 @@ public class DeduplicatorBuilder<K, V> {
   private ConcurrencyMode concurrencyMode = ConcurrencyMode.DISRUPTOR;
   private int disruptorRingBufferSize = 1024;
   private WaitStrategy disruptorWaitStrategy;
+  private long manualCommitIntervalMs;
 
   /**
    * Set the Kafka Consumer group.id prefix
@@ -192,6 +193,18 @@ public class DeduplicatorBuilder<K, V> {
     return this;
   }
 
+  /**
+   * Set the manual commit interval in milliseconds. Defaults to 0, which means disabled. Setting this to non-zero will periodically flush internal buffers and
+   * the producer prior to manually calling consumer.commitAsync()
+   *
+   * @param manualCommitIntervalMs
+   * @return
+   */
+  public DeduplicatorBuilder<K, V> manualCommitIntervalMs(long manualCommitIntervalMs) {
+    this.manualCommitIntervalMs = manualCommitIntervalMs;
+    return this;
+  }
+
   public Deduplicator<K, V> build() {
     if(consumerGroupIdPrefix == null)
       throw new IllegalArgumentException("consumerGroupIdPrefix cannot be null");
@@ -230,7 +243,7 @@ public class DeduplicatorBuilder<K, V> {
       throw new IllegalArgumentException("Unrecognized concurrencyMode: " + concurrencyMode);
     }
 
-    return new Deduplicator<>(consumerGroupIdPrefix, consumerProperties, inboundTopics, recordHandler, recoveryService);
+    return new Deduplicator<>(consumerGroupIdPrefix, consumerProperties, inboundTopics, recordHandler, recoveryService, manualCommitIntervalMs);
   }
 
   public enum ConcurrencyMode {

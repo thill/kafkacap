@@ -22,6 +22,7 @@ public class DeduplicatorConfig {
   private String outboundTopic;
   private String dedupStrategy;
   private boolean orderedCapture;
+  private long manualCommitIntervalMs;
 
   public String getConsumerGroupIdPrefix() {
     return consumerGroupIdPrefix;
@@ -101,6 +102,7 @@ public class DeduplicatorConfig {
             ", outboundTopic='" + outboundTopic + '\'' +
             ", dedupStrategy='" + dedupStrategy + '\'' +
             ", orderedCapture=" + orderedCapture +
+            ", manualCommitIntervalMs=" + manualCommitIntervalMs +
             '}';
   }
 }
