@@ -79,7 +79,7 @@ public class TestablePublication implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     tryClose(publication);
     aeron = tryClose(aeron);
     driver = tryClose(driver);
