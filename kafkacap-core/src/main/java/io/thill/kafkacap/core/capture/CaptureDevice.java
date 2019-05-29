@@ -94,8 +94,6 @@ public abstract class CaptureDevice<K, V> implements Runnable, AutoCloseable {
       cleanup();
       logger.info("Closing Publisher...");
       tryClose(bufferedPublisher);
-      logger.info("Closing Stats...");
-      stats.close();
       logger.info("Closed");
       closeComplete.countDown();
     }
