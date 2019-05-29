@@ -16,6 +16,10 @@
         </license>
     </licenses>
 
+    <properties>
+        <version.aeron>1.19.1</version.aeron>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.thill.kafkacap</groupId>
@@ -26,6 +30,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${version.slf4j}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.aeron</groupId>
+            <artifactId>aeron-client</artifactId>
+            <version>${version.aeron}</version>
         </dependency>
 
         <dependency>
@@ -38,6 +47,12 @@
             <groupId>io.thill.kafkalite</groupId>
             <artifactId>kafka-lite</artifactId>
             <version>0.9.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.aeron</groupId>
+            <artifactId>aeron-driver</artifactId>
+            <version>${version.aeron}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -9,6 +9,7 @@ import io.thill.kafkacap.core.capture.callback.MultiStoreFileListener;
 import io.thill.kafkacap.core.capture.callback.SendStatTracker;
 import io.thill.kafkacap.core.capture.config.CaptureDeviceConfig;
 import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
+import io.thill.kafkacap.core.capture.populator.RecordPopulator;
 import io.thill.kafkacap.core.capture.queue.CaptureQueue;
 import io.thill.kafkacap.core.capture.queue.ChronicleCaptureQueue;
 import io.thill.kafkacap.core.util.clock.Clock;
@@ -118,13 +119,17 @@ public abstract class CaptureDevice implements Runnable, AutoCloseable {
     kafkaProducerProperties.putAll(config.getKafka().getProducer());
     final BufferedPublisher<byte[], byte[]> bufferedPublisher = new BufferedPublisherBuilder<byte[], byte[]>()
             .captureQueue(captureQueue)
-            .recordPopulator(new DefaultRecordPopulator<>(config.getKafka().getTopic(), config.getKafka().getPartition(), clock))
+            .recordPopulator(createRecordPopulator(config.getKafka().getTopic(), config.getKafka().getPartition(), clock))
             .clock(clock)
             .kafkaProducerProperties(kafkaProducerProperties)
             .sendCompleteListener(new SendStatTracker(clock, stats, new ImmutableTrackerId(0, "latency"), 10))
             .build();
     storeFileListener.addListener(new AutoCleanupChronicleListener(bufferedPublisher));
     return bufferedPublisher;
+  }
+
+  protected RecordPopulator<byte[], byte[]> createRecordPopulator(String topic, int partition, Clock clock) {
+    return new DefaultRecordPopulator<>(topic, partition, clock);
   }
 
   /**
