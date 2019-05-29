@@ -103,7 +103,7 @@ public class TestAeronCaptureDevice {
 
     logger.info("Starting AeronCaptureDevice");
     stats = Stats.create(new Slf4jStatLogger());
-    AeronCaptureDevice captureDevice = new AeronCaptureDevice(config, stats));
+    AeronCaptureDevice captureDevice = new AeronCaptureDevice(config, stats);
     captureDevice.start();
     while(!captureDevice.isStarted())
       Thread.sleep(10);
