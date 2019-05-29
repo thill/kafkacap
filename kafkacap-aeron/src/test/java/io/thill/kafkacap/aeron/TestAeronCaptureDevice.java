@@ -54,6 +54,7 @@ public class TestAeronCaptureDevice {
   private AeronCaptureDevice captureDevice;
   private Map<String, TestablePublication> publications = new LinkedHashMap<>();
   private QueuedKafkaConsumer<byte[], String> kafkaConsumer;
+  private Stats stats;
 
   @Before
   public void setup() throws Exception {
@@ -101,7 +102,8 @@ public class TestAeronCaptureDevice {
     kafkaConsumer = new QueuedKafkaConsumer<>(TOPIC_PARTITION, KafkaLite.consumerProperties(ByteArrayDeserializer.class, StringDeserializer.class));
 
     logger.info("Starting AeronCaptureDevice");
-    AeronCaptureDevice captureDevice = new AeronCaptureDevice(config, Stats.create(new Slf4jStatLogger()));
+    stats = Stats.create(new Slf4jStatLogger());
+    AeronCaptureDevice captureDevice = new AeronCaptureDevice(config, stats));
     captureDevice.start();
     while(!captureDevice.isStarted())
       Thread.sleep(10);
@@ -122,6 +124,7 @@ public class TestAeronCaptureDevice {
     driver = tryClose(driver);
     aeronDirectory = delete(aeronDirectory);
     chronicleQueuePath = delete(chronicleQueuePath);
+    stats.close();
     logger.info("=== Teardown Complete ===");
   }
 

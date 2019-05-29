@@ -44,6 +44,7 @@ public class TestMulticastCaptureDevice {
   private MulticastCaptureDevice device;
   private QueuedKafkaConsumer<Void, String> kafkaConsumer;
   private MulticastSocket sendSocket;
+  private Stats stats;
 
   @Before
   public void setup() throws Exception {
@@ -82,7 +83,8 @@ public class TestMulticastCaptureDevice {
     mcastConfig.setChronicle(chronicle);
     mcastConfig.setKafka(kafka);
 
-    MulticastCaptureDevice device = new MulticastCaptureDevice(mcastConfig, Stats.create(new Slf4jStatLogger()));
+    stats = Stats.create(new Slf4jStatLogger());
+    MulticastCaptureDevice device = new MulticastCaptureDevice(mcastConfig, stats);
     device.start();
     while(!device.isStarted())
       Thread.sleep(10);
@@ -100,6 +102,9 @@ public class TestMulticastCaptureDevice {
     if(sendSocket != null) {
       sendSocket.close();
       sendSocket = null;
+    }
+    if(stats != null) {
+      stats.close();
     }
   }
 

@@ -71,6 +71,7 @@ public class QueueCaptureDevice extends CaptureDevice<byte[], byte[]> {
   @Override
   protected void cleanup() {
     queue.clear();
+    stats.close();
   }
 
   @Override
