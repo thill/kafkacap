@@ -177,7 +177,6 @@ public class TestAeronCaptureDevice {
   private DataHeaderFlyweight header(byte[] headerBytes) {
     DataHeaderFlyweight header = new DataHeaderFlyweight();
     header.wrap(headerBytes);
-    System.out.println("!!! " + header);
     return header;
   }
 
