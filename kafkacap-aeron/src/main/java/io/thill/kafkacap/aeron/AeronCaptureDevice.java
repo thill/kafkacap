@@ -15,6 +15,8 @@ import io.thill.kafkacap.core.capture.CaptureDevice;
 import io.thill.kafkacap.core.capture.populator.RecordPopulator;
 import io.thill.kafkacap.core.util.clock.Clock;
 import io.thill.kafkacap.core.util.io.ResourceLoader;
+import io.thill.kafkacap.core.util.stats.StatsUtil;
+import io.thill.trakrj.Stats;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SigInt;
 import org.slf4j.Logger;
@@ -28,7 +30,7 @@ import java.io.IOException;
  *
  * @author Eric Thill
  */
-public class AeronCaptureDevice extends CaptureDevice {
+public class AeronCaptureDevice extends CaptureDevice<byte[], byte[]> {
 
   public static void main(String... args) throws IOException {
     final Logger logger = LoggerFactory.getLogger(AeronCaptureDevice.class);
@@ -49,7 +51,7 @@ public class AeronCaptureDevice extends CaptureDevice {
 
     // instantiate and run
     logger.info("Instantiating {}...", AeronCaptureDevice.class.getSimpleName());
-    final AeronCaptureDevice device = new AeronCaptureDevice(config);
+    final AeronCaptureDevice device = new AeronCaptureDevice(config, StatsUtil.configuredStatsOrDefault());
     logger.info("Registering SigInt Handler...");
     SigInt.register(() -> {
       try {
@@ -75,8 +77,8 @@ public class AeronCaptureDevice extends CaptureDevice {
   private Aeron aeron;
   private Subscription subscription;
 
-  public AeronCaptureDevice(AeronCaptureDeviceConfig config) {
-    super(config);
+  public AeronCaptureDevice(AeronCaptureDeviceConfig config, Stats stats) {
+    super(config, stats);
     this.aeronDirectoryName = config.getReceiver().getAeronDirectoryName();
     this.channel = config.getReceiver().getChannel();
     this.streamId = config.getReceiver().getStreamId();
@@ -100,10 +102,8 @@ public class AeronCaptureDevice extends CaptureDevice {
   }
 
   @Override
-  protected boolean poll(BufferHandler handler) {
-    internalFragmentHandler.prePoll(handler);
-    subscription.poll(fragmentAssembler, fragmentLimit);
-    return internalFragmentHandler.polled();
+  protected boolean doWork() {
+    return subscription.poll(fragmentAssembler, fragmentLimit) > 0;
   }
 
   @Override
@@ -118,10 +118,7 @@ public class AeronCaptureDevice extends CaptureDevice {
 
   }
 
-  private static class InternalFragmentHandler implements FragmentHandler {
-    private BufferHandler bufferHandler;
-    private boolean polled;
-
+  private class InternalFragmentHandler implements FragmentHandler {
     @Override
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
       final byte[] payload = new byte[DataHeaderFlyweight.HEADER_LENGTH + length];
@@ -129,22 +126,8 @@ public class AeronCaptureDevice extends CaptureDevice {
       buffer.getBytes(header.offset(), payload, 0, DataHeaderFlyweight.HEADER_LENGTH);
       // copy message
       buffer.getBytes(offset, payload, DataHeaderFlyweight.HEADER_LENGTH, length);
-      // forward to buffer handler
-      bufferHandler.handle(payload, 0, payload.length);
-      // flag that something was polled/handled
-      polled = true;
-    }
-
-    public void prePoll(BufferHandler bufferHandler) {
-      this.bufferHandler = bufferHandler;
-      this.polled = false;
-    }
-
-    public boolean polled() {
-      return polled;
+      // write to buffer publisher
+      bufferedPublisher.write(payload, 0, payload.length);
     }
   }
-
-
-
 }

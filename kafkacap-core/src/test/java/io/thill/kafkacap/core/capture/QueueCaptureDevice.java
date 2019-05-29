@@ -8,19 +8,24 @@ import com.google.common.io.Files;
 import io.thill.kafkacap.core.capture.config.CaptureDeviceConfig;
 import io.thill.kafkacap.core.capture.config.ChronicleConfig;
 import io.thill.kafkacap.core.capture.config.KafkaConfig;
+import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
+import io.thill.kafkacap.core.capture.populator.RecordPopulator;
+import io.thill.kafkacap.core.util.clock.Clock;
 import io.thill.kafkalite.KafkaLite;
+import io.thill.trakrj.Stats;
+import io.thill.trakrj.logger.Slf4jStatLogger;
 import net.openhft.chronicle.queue.RollCycles;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class QueueCaptureDevice extends CaptureDevice {
+public class QueueCaptureDevice extends CaptureDevice<byte[], byte[]> {
 
   private final BlockingQueue<byte[]> queue = new LinkedBlockingQueue<>();
 
   public QueueCaptureDevice(String topic, int partition) {
-    super(config(topic, partition));
+    super(config(topic, partition), Stats.create(new Slf4jStatLogger()));
   }
 
   private static CaptureDeviceConfig config(String topic, int partition) {
@@ -45,16 +50,21 @@ public class QueueCaptureDevice extends CaptureDevice {
   }
 
   @Override
-  protected boolean poll(BufferHandler handler) throws Exception {
+  protected RecordPopulator<byte[], byte[]> createRecordPopulator(String topic, int partition, Clock clock) {
+    return new DefaultRecordPopulator<>(topic, partition, clock);
+  }
+
+  @Override
+  protected boolean doWork() {
     byte[] payload = queue.poll();
     if(payload == null)
       return false;
-    handler.handle(payload, 0, payload.length);
+    bufferedPublisher.write(payload, 0, payload.length);
     return true;
   }
 
   @Override
-  protected void init() throws Exception {
+  protected void init() {
 
   }
 
@@ -67,4 +77,5 @@ public class QueueCaptureDevice extends CaptureDevice {
   protected void onClose() {
 
   }
+
 }

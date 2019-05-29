@@ -13,6 +13,8 @@ import io.thill.kafkacap.core.capture.config.KafkaConfig;
 import io.thill.kafkacap.core.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
+import io.thill.trakrj.Stats;
+import io.thill.trakrj.logger.Slf4jStatLogger;
 import net.openhft.chronicle.queue.RollCycles;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -99,7 +101,7 @@ public class TestAeronCaptureDevice {
     kafkaConsumer = new QueuedKafkaConsumer<>(TOPIC_PARTITION, KafkaLite.consumerProperties(ByteArrayDeserializer.class, StringDeserializer.class));
 
     logger.info("Starting AeronCaptureDevice");
-    AeronCaptureDevice captureDevice = new AeronCaptureDevice(config);
+    AeronCaptureDevice captureDevice = new AeronCaptureDevice(config, Stats.create(new Slf4jStatLogger()));
     captureDevice.start();
     while(!captureDevice.isStarted())
       Thread.sleep(10);

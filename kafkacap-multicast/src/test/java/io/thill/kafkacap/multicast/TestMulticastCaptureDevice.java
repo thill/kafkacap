@@ -12,6 +12,8 @@ import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
 import io.thill.kafkacap.core.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
+import io.thill.trakrj.Stats;
+import io.thill.trakrj.logger.Slf4jStatLogger;
 import net.openhft.chronicle.queue.RollCycles;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -80,8 +82,10 @@ public class TestMulticastCaptureDevice {
     mcastConfig.setChronicle(chronicle);
     mcastConfig.setKafka(kafka);
 
-    MulticastCaptureDevice device = new MulticastCaptureDevice(mcastConfig);
+    MulticastCaptureDevice device = new MulticastCaptureDevice(mcastConfig, Stats.create(new Slf4jStatLogger()));
     device.start();
+    while(!device.isStarted())
+      Thread.sleep(10);
 
     sendSocket = new MulticastSocket();
     sendSocket.setInterface(InetAddress.getLocalHost());

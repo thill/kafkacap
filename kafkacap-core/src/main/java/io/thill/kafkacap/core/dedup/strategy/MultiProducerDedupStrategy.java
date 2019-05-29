@@ -5,7 +5,6 @@
 package io.thill.kafkacap.core.dedup.strategy;
 
 import io.thill.kafkacap.core.dedup.assignment.Assignment;
-import oracle.jvm.hotspot.jfr.Producer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

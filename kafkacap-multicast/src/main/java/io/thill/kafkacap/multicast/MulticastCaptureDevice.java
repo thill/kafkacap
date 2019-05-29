@@ -4,9 +4,17 @@
  */
 package io.thill.kafkacap.multicast;
 
+import io.thill.kafkacap.core.capture.BufferedPublisher;
 import io.thill.kafkacap.core.capture.CaptureDevice;
+import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
+import io.thill.kafkacap.core.capture.populator.RecordPopulator;
+import io.thill.kafkacap.core.util.clock.Clock;
+import io.thill.kafkacap.core.util.stats.StatsUtil;
 import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
 import io.thill.kafkacap.core.util.io.ResourceLoader;
+import io.thill.trakrj.Stats;
+import io.thill.trakrj.TrakrJ;
+import io.thill.trakrj.logger.Slf4jStatLogger;
 import org.agrona.concurrent.SigInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +28,7 @@ import java.net.*;
  *
  * @author Eric Thill
  */
-public class MulticastCaptureDevice extends CaptureDevice {
+public class MulticastCaptureDevice extends CaptureDevice<byte[], byte[]> {
 
   public static void main(String... args) throws IOException {
     final Logger logger = LoggerFactory.getLogger(MulticastCaptureDevice.class);
@@ -41,7 +49,7 @@ public class MulticastCaptureDevice extends CaptureDevice {
 
     // instantiate and run
     logger.info("Instantiating {}...", MulticastCaptureDevice.class.getSimpleName());
-    final MulticastCaptureDevice device = new MulticastCaptureDevice(config);
+    final MulticastCaptureDevice device = new MulticastCaptureDevice(config, StatsUtil.configuredStatsOrDefault());
     logger.info("Registering SigInt Handler...");
     SigInt.register(() -> {
       try {
@@ -62,8 +70,8 @@ public class MulticastCaptureDevice extends CaptureDevice {
   private final DatagramPacket packet;
   private final MulticastSocket multicastSocket;
 
-  public MulticastCaptureDevice(MulticastCaptureDeviceConfig config) throws IOException {
-    super(config);
+  public MulticastCaptureDevice(MulticastCaptureDeviceConfig config, Stats stats) throws IOException {
+    super(config, stats);
     this.iface = lookupNetworkInterface(config.getReceiver().getIface());
     this.group = config.getReceiver().getGroup() == null ? null : InetAddress.getByName(config.getReceiver().getGroup());
     this.port = config.getReceiver().getPort();
@@ -80,6 +88,11 @@ public class MulticastCaptureDevice extends CaptureDevice {
   }
 
   @Override
+  protected RecordPopulator createRecordPopulator(String topic, int partition, Clock clock) {
+    return new DefaultRecordPopulator<>(topic, partition, clock);
+  }
+
+  @Override
   protected void init() throws IOException {
     if(iface != null) {
       logger.info("Using Interface: {}", iface);
@@ -91,11 +104,11 @@ public class MulticastCaptureDevice extends CaptureDevice {
   }
 
   @Override
-  protected boolean poll(BufferHandler handler) throws IOException {
+  protected boolean doWork() throws IOException {
     if(multicastSocket.isClosed())
       return false;
     multicastSocket.receive(packet);
-    handler.handle(packet.getData(), 0, packet.getLength());
+    bufferedPublisher.write(packet.getData(), 0, packet.getLength());
     return true;
   }
 

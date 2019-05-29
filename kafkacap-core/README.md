@@ -15,7 +15,7 @@ A Capture process queues messages before writing them to Kafka. This is done to 
 * Chronicle: `ChronicleCaptureQueue` will queue all messages to disk using [Chronicle-Queue](https://github.com/OpenHFT/Chronicle-Queue). Capacity is limited only by available disk space. This implementation is recommended when messages must be captured and buffered in the event of a Kafka Cluster outage.
 
 ### Capture Device
-`io.thill.kafkacap.core.capture.CaptureDevice` is an abstract class that allows simple plug-and-play of any poll-based receiver. It handles most of the ceremony of creating a typical `BufferedPublisher` with an underlying `ChronicleCaptureQueue`
+`io.thill.kafkacap.core.capture.CaptureDevice` is an abstract class that allows simple plug-and-play of virtually any receiver. It handles most of the ceremony of creating a typical `BufferedPublisher` with an underlying `ChronicleCaptureQueue`
  
 ### Buffered Publisher
 For additional flexibility, a `BufferedPublisher` can be instantiated and used directly, instead of relying on the abstraction of a `CaptureDevice`.
