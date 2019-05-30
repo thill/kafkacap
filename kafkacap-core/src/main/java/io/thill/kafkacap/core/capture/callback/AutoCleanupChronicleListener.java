@@ -20,6 +20,7 @@ public class AutoCleanupChronicleListener implements StoreFileListener {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final BufferedPublisher publisher;
+  private File lastReleasedFile;
 
   /**
    * AutoCleanupChronicleListener Constructor
@@ -34,9 +35,10 @@ public class AutoCleanupChronicleListener implements StoreFileListener {
   public void onReleased(int cycle, File file) {
     logger.info("Released {}", file.getAbsolutePath());
     publisher.flush();
-    if(file.delete()) {
+    if(lastReleasedFile != null && lastReleasedFile.delete()) {
       logger.info("Deleted {}", file.getAbsolutePath());
     }
+    lastReleasedFile = file;
   }
 
 }

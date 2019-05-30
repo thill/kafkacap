@@ -27,3 +27,14 @@ kafka:
   topic: "capture_topic_1"
   partition: 0
 ```
+
+
+## Kafka Records
+
+In addition to populating the payload in the Kafka record value, the `AeronRecordPopulator` will also copy the Aeron header to the Kafka record key.  
+
+
+## Deduplication
+
+Since Aeron provides per-producer semantics via the `sessionId` field in the header, a class called `AeronDedupStrategy` is provided which extends `MultiProducerDedupStreategy`. 
+It automatically provides `producerKey` parsing using the Aeron session ID. 
