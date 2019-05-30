@@ -2,7 +2,9 @@
  * Licensed under the Apache License, Version 2.0
  * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  */
-package io.thill.kafkacap.core.util.clock;
+package io.thill.kafkacap.multicast.util;
+
+import io.thill.kafkacap.core.util.clock.Clock;
 
 public class SettableClock implements Clock {
   private volatile long now;
