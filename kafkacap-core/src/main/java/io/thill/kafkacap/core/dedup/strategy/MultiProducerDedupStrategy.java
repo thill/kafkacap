@@ -94,7 +94,7 @@ public abstract class MultiProducerDedupStrategy<K, V> implements DedupStrategy<
    * Factory for creating underlying {@link DedupStrategy}s per producer.
    */
   public interface DedupStrategyFactory<K, V> {
-    DedupStrategy<K, V> create(Object producerKey);
+    DedupStrategy<K, V> create(String producerKey);
   }
 
   private static class ProducerContext<K, V> {

@@ -31,7 +31,8 @@ public interface DedupStrategy<K, V> {
    * @param inboundRecord
    * @param outboundHeaders
    */
-  void populateHeaders(ConsumerRecord<K, V> inboundRecord, RecordHeaders outboundHeaders);
+  default void populateHeaders(ConsumerRecord<K, V> inboundRecord, RecordHeaders outboundHeaders) {
+  }
 
   /**
    * Callback when partitions are reassigned
