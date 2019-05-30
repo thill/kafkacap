@@ -9,6 +9,7 @@
         <module name="kafkacap-aeron" />
         <module name="kafkacap-core" />
         <module name="kafkacap-multicast" />
+        <module name="kafkacap-websocket" />
       </profile>
     </annotationProcessing>
   </component>

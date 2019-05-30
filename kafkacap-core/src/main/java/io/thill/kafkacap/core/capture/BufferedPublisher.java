@@ -37,6 +37,7 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
   private final SendCompleteListener sendCompleteListener;
 
   private volatile CountDownLatch flushComplete;
+  private volatile Thread runThread;
 
   BufferedPublisher(final CaptureQueue captureQueue,
                     final RecordPopulator recordPopulator,
@@ -62,6 +63,7 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
   @Override
   public void run() {
     try {
+      runThread = Thread.currentThread();
       logger.info("Started");
       while(keepRunning.get()) {
         checkFlush();
@@ -88,12 +90,16 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
 
   private void checkFlush() {
     if(flushRequired.get()) {
-      logger.info("Flushing...");
-      kafkaProducer.flush();
-      logger.info("Flush Complete");
+      performFlush();
       flushRequired.set(false);
       flushComplete.countDown();
     }
+  }
+
+  private void performFlush() {
+    logger.debug("Flushing...");
+    kafkaProducer.flush();
+    logger.debug("Flush Complete");
   }
 
   private void send(byte[] payload, long enqueueTime) {
@@ -139,12 +145,19 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
   /**
    * Flush and block until complete
    */
-  public synchronized void flush() {
-    // synchronized only with other flush calls
-    flushComplete = new CountDownLatch(1);
-    flushRequired.set(true);
-    flushComplete.countDown();
-    flushComplete = null;
+  public void flush() throws InterruptedException {
+    if(Thread.currentThread() == runThread) {
+      // called from the BufferedPublisher run thread, perform the flush inline
+      performFlush();
+    } else {
+      // synchronized only with other flush calls, flag the flush and await completion
+      synchronized(flushRequired) {
+        flushComplete = new CountDownLatch(1);
+        flushRequired.set(true);
+        flushComplete.await();
+        flushComplete = null;
+      }
+    }
   }
 
 }
