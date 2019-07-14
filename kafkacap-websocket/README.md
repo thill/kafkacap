@@ -5,7 +5,7 @@ Receive from websocket and write to Kafka using a KafkaCap BufferedPublisher
 
 ## Running
 ```
-io.thill.kafkacap.multicast.WebsocketCaptureDevice /path/to/config.yaml
+io.thill.kafkacap.websocket.WebsocketCaptureDevice /path/to/config.yaml
 ```
 
 
