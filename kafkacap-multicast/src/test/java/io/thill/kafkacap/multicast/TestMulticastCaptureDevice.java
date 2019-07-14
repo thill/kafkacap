@@ -6,6 +6,7 @@ package io.thill.kafkacap.multicast;
 
 import io.thill.kafkacap.core.capture.config.ChronicleConfig;
 import io.thill.kafkacap.core.capture.config.KafkaConfig;
+import io.thill.kafkacap.core.util.io.BitUtil;
 import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
 import io.thill.kafkacap.multicast.config.MulticastConfig;
 import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
@@ -109,7 +110,7 @@ public class TestMulticastCaptureDevice {
   }
 
   private long parseLongHeader(ConsumerRecord<?, ?> record, String headerKey) {
-    return ByteBuffer.wrap(record.headers().lastHeader(headerKey).value()).order(ByteOrder.LITTLE_ENDIAN).getLong();
+    return BitUtil.bytesToLong(record.headers().lastHeader(headerKey).value());
   }
 
   @Test

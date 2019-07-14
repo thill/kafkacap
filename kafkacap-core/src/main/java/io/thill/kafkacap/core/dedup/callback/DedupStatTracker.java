@@ -51,7 +51,8 @@ public class DedupStatTracker<K, V> implements DedupCompleteListener<K, V> {
     Header header = consumerRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME);
     if(header != null) {
       final long captureQueueTime = BitUtil.bytesToLong(header.value());
-      final long latency = clock.now() - captureQueueTime;
+      long latency = clock.now() - captureQueueTime;
+      latency = latency > 0 ? latency : 0;
       stats.record(trackerId, latency);
     }
   }

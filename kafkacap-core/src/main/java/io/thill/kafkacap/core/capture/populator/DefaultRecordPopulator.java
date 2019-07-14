@@ -6,6 +6,7 @@ package io.thill.kafkacap.core.capture.populator;
 
 import io.thill.kafkacap.core.util.clock.Clock;
 import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.core.util.io.BitUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 
@@ -47,8 +48,8 @@ public class DefaultRecordPopulator<K> implements RecordPopulator<K, byte[]> {
 
   protected RecordHeaders headers(byte[] payload, long enqueueTime) {
     RecordHeaders headers = new RecordHeaders();
-    headers.add(RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME, longToBytes(enqueueTime));
-    headers.add(RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME, longToBytes(clock.now()));
+    headers.add(RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME, BitUtil.longToBytes(enqueueTime));
+    headers.add(RecordHeaderKeys.HEADER_KEY_CAPTURE_SEND_TIME, BitUtil.longToBytes(clock.now()));
     return headers;
   }
 
@@ -59,10 +60,5 @@ public class DefaultRecordPopulator<K> implements RecordPopulator<K, byte[]> {
   protected byte[] value(byte[] payload, long enqueueTime) {
     return payload;
   }
-
-  protected final byte[] longToBytes(long v) {
-    return ByteBuffer.wrap(new byte[8]).order(ByteOrder.LITTLE_ENDIAN).putLong(v).array();
-  }
-
 
 }

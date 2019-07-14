@@ -8,6 +8,7 @@ import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
 import io.thill.kafkacap.core.capture.queue.MemoryCaptureQueue;
 import io.thill.kafkacap.core.util.clock.SettableClock;
 import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
+import io.thill.kafkacap.core.util.io.BitUtil;
 import io.thill.kafkacap.core.util.io.FileUtil;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.kafkalite.client.QueuedKafkaConsumer;
@@ -69,7 +70,7 @@ public class TestBufferedPublisher {
   }
 
   private long parseLongHeader(ConsumerRecord<?, ?> record, String headerKey) {
-    return ByteBuffer.wrap(record.headers().lastHeader(headerKey).value()).order(ByteOrder.LITTLE_ENDIAN).getLong();
+    return BitUtil.bytesToLong(record.headers().lastHeader(headerKey).value());
   }
 
   @Test
