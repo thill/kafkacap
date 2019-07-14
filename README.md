@@ -29,3 +29,5 @@ Full Details: [Core](kafkacap-core)
 ### Capture Devices
 * [Aeron](kafkacap-aeron)
 * [Multicast](kafkacap-multicast)
+* [Websocket](kafkacap-websocket)
+
