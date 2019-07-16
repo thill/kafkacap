@@ -4,7 +4,7 @@ Receive from [Aeron](https://github.com/real-logic/Aeron) and write to Kafka usi
 
 
 ## Maven
-[Maven Artifact](https://search.maven.org/artifact/io.thill.kafkacap/kafkacap-aeron/)
+[Maven Artifact](https://search.maven.org/artifact/io.thill.kafkacap/kafkacap-aeron)
 ```
 <dependency>
   <groupId>io.thill.kafkacap</groupId>

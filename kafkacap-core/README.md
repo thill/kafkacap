@@ -3,7 +3,7 @@ Reliably Capture Messages to Kafka using redundant Capture Devices and a Dedupli
 
    
 ## Maven
-[Maven Artifact](https://search.maven.org/artifact/io.thill.kafkacap/kafkacap-core/)
+[Maven Artifact](https://search.maven.org/artifact/io.thill.kafkacap/kafkacap-core)
 ```
 <dependency>
   <groupId>io.thill.kafkacap</groupId>
