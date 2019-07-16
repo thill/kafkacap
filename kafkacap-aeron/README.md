@@ -2,6 +2,17 @@
 
 Receive from [Aeron](https://github.com/real-logic/Aeron) and write to Kafka using a KafkaCap BufferedPublisher
 
+
+## Maven
+[Maven Artifact](https://search.maven.org/artifact/io.thill.kafkacap/kafkacap-aeron/)
+```
+<dependency>
+  <groupId>io.thill.kafkacap</groupId>
+  <artifactId>kafkacap-aeron</artifactId>
+<dependency>
+```
+
+
 ## Running
 ```
 io.thill.kafkacap.aeron.AeronCaptureDevice /path/to/config.yaml

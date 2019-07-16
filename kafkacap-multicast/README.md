@@ -3,6 +3,16 @@
 Receive from multicast and write to Kafka using a KafkaCap BufferedPublisher
 
 
+## Maven
+[Maven Artifact](https://search.maven.org/artifact/io.thill.kafkacap/kafkacap-multicast/)
+```
+<dependency>
+  <groupId>io.thill.kafkacap</groupId>
+  <artifactId>kafkacap-multicast</artifactId>
+<dependency>
+```
+
+
 ## Running
 ```
 io.thill.kafkacap.multicast.MulticastCaptureDevice /path/to/config.yaml
