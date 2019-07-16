@@ -4,7 +4,7 @@
 
     <groupId>io.thill.kafkacap</groupId>
     <artifactId>kafkacap-parent</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>pom</packaging>
 
     <name>KafkaCap</name>
@@ -34,7 +34,7 @@
         <url>https://github.com/thillio/kafkacap</url>
         <connection>scm:git:git@github.com:thillio/kafkacap.git</connection>
         <developerConnection>scm:git:git@github.com:thillio/kafkacap.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>kafkacap-parent-0.1.0</tag>
     </scm>
     
     <distributionManagement>
