@@ -1,8 +1,6 @@
 # KafkaCap
 #### Reliably Capture Messages to Kafka 
 
-This is a work-on-progress. Pardon my dust.
-
 
 ## Architecture
 * 2 or more Capture Devices write to separate Kafka Topics
