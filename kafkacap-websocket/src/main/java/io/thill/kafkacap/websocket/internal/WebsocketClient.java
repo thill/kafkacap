@@ -18,7 +18,7 @@ public class WebsocketClient {
   private final Charset textCharset;
   private final BufferedPublisher<byte[], byte[]> bufferedPublisher;
   private volatile Session userSession;
-  private volatile boolean closed;
+  private volatile boolean closed = true;
 
   public WebsocketClient(URI endpointUri, Charset textCharset, BufferedPublisher<byte[], byte[]> bufferedPublisher) {
     this.endpointUri = endpointUri;
@@ -45,6 +45,8 @@ public class WebsocketClient {
   @OnOpen
   public void onOpen(Session userSession) {
     logger.info("WebSocket Open. endpointUri={}", endpointUri);
+    this.userSession = userSession;
+    closed = false;
   }
 
   @OnClose
