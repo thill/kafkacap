@@ -22,6 +22,7 @@ import java.util.Set;
  *
  * @param <K> kafka record key type
  * @param <V> kafka record value type
+ * @author Eric Thill
  */
 public abstract class SequencedDedupStrategy<K, V> implements DedupStrategy<K, V> {
 

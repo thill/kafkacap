@@ -25,8 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -155,8 +157,17 @@ public class Deduplicator<K, V> implements AutoCloseable {
     final Stats stats = Stats.create(new Slf4jStatLogger());
 
     // instantiate dedup strategy
-    logger.info("Instantiating {}", config.getDedupStrategy());
-    DedupStrategy dedupStrategy = (DedupStrategy)Class.forName(config.getDedupStrategy()).newInstance();
+    logger.info("Instantiating DedupStrategy {}", config.getDedupStrategy().getImpl());
+    Class<?> dedupStrategyClass = Class.forName(config.getDedupStrategy().getImpl());
+    DedupStrategy dedupStrategy;
+    try {
+      Constructor<?> dedupStreategyConstructor = dedupStrategyClass.getDeclaredConstructor(Map.class);
+      logger.info("Constructing DedupStrategy with props={}", config.getDedupStrategy().getProps());
+      dedupStrategy = (DedupStrategy)dedupStreategyConstructor.newInstance(config.getDedupStrategy().getProps());
+    } catch(NoSuchMethodException e) {
+      logger.info("Constructing DedupStrategy using default constructor");
+      dedupStrategy = (DedupStrategy)dedupStrategyClass.newInstance();
+    }
 
     // instantiate and start deduplicator
     logger.info("Instantiating {}...", Deduplicator.class.getSimpleName());

@@ -20,9 +20,8 @@ public class DeduplicatorConfig {
   private Map<String, String> producer;
   private List<String> inboundTopics;
   private String outboundTopic;
-  private String dedupStrategy;
+  private DedupStrategyConfig dedupStrategy;
   private boolean orderedCapture;
-  private long manualCommitIntervalMs;
 
   public String getConsumerGroupIdPrefix() {
     return consumerGroupIdPrefix;
@@ -76,11 +75,11 @@ public class DeduplicatorConfig {
     this.outboundTopic = outboundTopic;
   }
 
-  public String getDedupStrategy() {
+  public DedupStrategyConfig getDedupStrategy() {
     return dedupStrategy;
   }
 
-  public void setDedupStrategy(String dedupStrategy) {
+  public void setDedupStrategy(DedupStrategyConfig dedupStrategy) {
     this.dedupStrategy = dedupStrategy;
   }
 
@@ -102,7 +101,6 @@ public class DeduplicatorConfig {
             ", outboundTopic='" + outboundTopic + '\'' +
             ", dedupStrategy='" + dedupStrategy + '\'' +
             ", orderedCapture=" + orderedCapture +
-            ", manualCommitIntervalMs=" + manualCommitIntervalMs +
             '}';
   }
 }
