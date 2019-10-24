@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -66,7 +67,7 @@ public class TestMulticastCaptureDevice {
 
     MulticastConfig receiver = new MulticastConfig();
     receiver.setGroup(MULTICAST_ADDRESS);
-    receiver.setIface("localhost");
+    receiver.setIface(InetAddress.getLocalHost().getHostAddress());
     receiver.setMtu(1500);
     receiver.setPort(MULTICAST_PORT);
 
