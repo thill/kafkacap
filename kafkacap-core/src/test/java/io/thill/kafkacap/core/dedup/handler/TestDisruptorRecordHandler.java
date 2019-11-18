@@ -9,7 +9,8 @@ import io.thill.kafkacap.core.dedup.cache.MemoryRecordCache;
 import io.thill.kafkacap.core.dedup.cache.RecordCacheManager;
 import io.thill.kafkacap.core.dedup.outbound.RecordSender;
 import io.thill.kafkacap.core.dedup.strategy.TestableSequencedDedupStrategy;
-import io.thill.kafkacap.core.util.clock.SystemMillisClock;
+
+import java.time.Clock;
 
 public class TestDisruptorRecordHandler extends AbstractRecordHandlerTest {
 
@@ -20,7 +21,7 @@ public class TestDisruptorRecordHandler extends AbstractRecordHandlerTest {
     return new DisruptorRecordHandler<>(new SingleThreadRecordHandler<>(
             new TestableSequencedDedupStrategy(ORDERED_CAPTURE, 100),
             new RecordCacheManager<>(MemoryRecordCache.factory()),
-            ORDERED_CAPTURE, sender, new SystemMillisClock(), null
+            ORDERED_CAPTURE, sender, Clock.systemUTC(), null
     ), 1024, new BlockingWaitStrategy());
   }
 

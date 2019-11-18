@@ -4,7 +4,7 @@
  */
 package io.thill.kafkacap.core.dedup.callback;
 
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
 import io.thill.kafkacap.core.util.io.BitUtil;
 import io.thill.trakrj.Intervals;
@@ -51,7 +51,7 @@ public class DedupStatTracker<K, V> implements DedupCompleteListener<K, V> {
     Header header = consumerRecord.headers().lastHeader(RecordHeaderKeys.HEADER_KEY_CAPTURE_QUEUE_TIME);
     if(header != null) {
       final long captureQueueTime = BitUtil.bytesToLong(header.value());
-      long latency = clock.now() - captureQueueTime;
+      long latency = clock.millis() - captureQueueTime;
       latency = latency > 0 ? latency : 0;
       stats.record(trackerId, latency);
     }

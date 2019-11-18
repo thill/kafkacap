@@ -10,12 +10,12 @@ import io.thill.kafkacap.core.capture.populator.RecordPopulator;
 import io.thill.kafkacap.core.capture.queue.CaptureQueue;
 import io.thill.kafkacap.core.capture.queue.ChronicleCaptureQueue;
 import io.thill.kafkacap.core.capture.queue.MemoryCaptureQueue;
-import io.thill.kafkacap.core.util.clock.Clock;
-import io.thill.kafkacap.core.util.clock.SystemMillisClock;
+
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
+import java.time.Clock;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +30,7 @@ public class BufferedPublisherBuilder<K, V> {
   private CaptureQueue captureQueue;
   private RecordPopulator<K, V> recordPopulator;
   private Properties kafkaProducerProperties;
-  private Clock clock = new SystemMillisClock();
+  private Clock clock = Clock.systemUTC();
   private IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
   private SendCompleteListener sendCompleteListener;
 

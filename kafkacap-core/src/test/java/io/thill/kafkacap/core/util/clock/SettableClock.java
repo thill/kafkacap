@@ -4,11 +4,15 @@
  */
 package io.thill.kafkacap.core.util.clock;
 
-public class SettableClock implements Clock {
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+
+public class SettableClock extends Clock {
   private volatile long now;
 
   @Override
-  public long now() {
+  public long millis() {
     return now;
   }
 
@@ -16,4 +20,19 @@ public class SettableClock implements Clock {
     this.now = now;
   }
 
+  /* abstract methods needed to be overridden from the Clock class */
+  @Override
+  public Instant instant() {
+    return Instant.ofEpochMilli(now);
+  }
+
+  @Override
+  public ZoneId getZone() {
+    return ZoneId.systemDefault();
+  }
+
+  @Override
+  public Clock withZone(ZoneId zone) {
+    return Clock.fixed(instant(), zone);
+  }
 }

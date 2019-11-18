@@ -33,7 +33,7 @@ For additional flexibility, a `BufferedPublisher` can be instantiated and used d
 ```
 BufferedPublisher<byte[], byte[]> bufferedPublisher = new BufferedPublisherBuilder<byte[], byte[]>()
         .captureQueue            ( new MemoryCaptureQueue() )
-        .recordPopulator         ( new DefaultRecordPopulator<>("my_topic_capture_a", 0, new SystemMillisClock()) )
+        .recordPopulator         ( new DefaultRecordPopulator<>("my_topic_capture_a", 0, Clock.systemUTC()) )
         .kafkaProducerProperties ( kafkaProducerProperties )
         .build();
 ```

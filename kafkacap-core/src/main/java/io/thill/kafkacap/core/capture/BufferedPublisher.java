@@ -7,7 +7,7 @@ package io.thill.kafkacap.core.capture;
 import io.thill.kafkacap.core.capture.callback.SendCompleteListener;
 import io.thill.kafkacap.core.capture.populator.RecordPopulator;
 import io.thill.kafkacap.core.capture.queue.CaptureQueue;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import org.agrona.concurrent.IdleStrategy;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -128,7 +128,7 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
    * @param buffer The payload buffer
    */
   public void write(byte[] buffer) {
-    captureQueue.add(buffer, clock.now());
+    captureQueue.add(buffer, clock.millis());
   }
 
   /**
@@ -139,7 +139,7 @@ public class BufferedPublisher<K, V> implements Runnable, AutoCloseable {
    * @param length The size of the payload
    */
   public void write(byte[] buffer, int offset, int length) {
-    captureQueue.add(buffer, offset, length, clock.now());
+    captureQueue.add(buffer, offset, length, clock.millis());
   }
 
   /**

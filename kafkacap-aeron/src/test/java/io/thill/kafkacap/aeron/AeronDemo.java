@@ -12,9 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AeronDemo {
@@ -25,6 +22,7 @@ public class AeronDemo {
   private static final int STREAM_ID = 1;
 
   public static void main(String... args) throws Exception {
+
     KafkaLite.cleanOnShutdown();
     KafkaLite.reset();
     KafkaLite.createTopic("capture_topic_1", 1);

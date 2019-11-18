@@ -6,7 +6,7 @@ package io.thill.kafkacap.aeron;
 
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 
 import java.util.Arrays;
 

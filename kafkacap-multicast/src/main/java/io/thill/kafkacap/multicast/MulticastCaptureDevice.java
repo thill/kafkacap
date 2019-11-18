@@ -8,7 +8,7 @@ import io.thill.kafkacap.core.capture.BufferedPublisher;
 import io.thill.kafkacap.core.capture.CaptureDevice;
 import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
 import io.thill.kafkacap.core.capture.populator.RecordPopulator;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import io.thill.kafkacap.core.util.stats.StatsUtil;
 import io.thill.kafkacap.multicast.config.MulticastCaptureDeviceConfig;
 import io.thill.kafkacap.core.util.io.ResourceLoader;

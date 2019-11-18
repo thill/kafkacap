@@ -10,7 +10,7 @@ import io.thill.kafkacap.core.capture.config.ChronicleConfig;
 import io.thill.kafkacap.core.capture.config.KafkaConfig;
 import io.thill.kafkacap.core.capture.populator.DefaultRecordPopulator;
 import io.thill.kafkacap.core.capture.populator.RecordPopulator;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import io.thill.kafkalite.KafkaLite;
 import io.thill.trakrj.Stats;
 import io.thill.trakrj.logger.Slf4jStatLogger;

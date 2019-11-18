@@ -13,7 +13,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.thill.kafkacap.aeron.config.AeronCaptureDeviceConfig;
 import io.thill.kafkacap.core.capture.CaptureDevice;
 import io.thill.kafkacap.core.capture.populator.RecordPopulator;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import io.thill.kafkacap.core.util.io.ResourceLoader;
 import io.thill.kafkacap.core.util.stats.StatsUtil;
 import io.thill.trakrj.Stats;
