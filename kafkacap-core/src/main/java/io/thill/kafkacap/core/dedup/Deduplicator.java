@@ -13,8 +13,6 @@ import io.thill.kafkacap.core.dedup.inbound.LeadConsumer;
 import io.thill.kafkacap.core.dedup.inbound.ThrottledDequeuer;
 import io.thill.kafkacap.core.dedup.recovery.RecoveryService;
 import io.thill.kafkacap.core.dedup.strategy.DedupStrategy;
-import io.thill.kafkacap.core.util.clock.Clock;
-import io.thill.kafkacap.core.util.clock.SystemMillisClock;
 import io.thill.kafkacap.core.util.io.ResourceLoader;
 import io.thill.trakrj.Stats;
 import io.thill.trakrj.TrackerId;
@@ -27,6 +25,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -171,7 +170,7 @@ public class Deduplicator<K, V> implements AutoCloseable {
 
     // instantiate and start deduplicator
     logger.info("Instantiating {}...", Deduplicator.class.getSimpleName());
-    final Clock clock = new SystemMillisClock();
+    final Clock clock = Clock.systemUTC();
     final Deduplicator deduplicator = new DeduplicatorBuilder<>()
             .consumerGroupIdPrefix(config.getConsumerGroupIdPrefix())
             .consumerProperties(config.getConsumerProperties())

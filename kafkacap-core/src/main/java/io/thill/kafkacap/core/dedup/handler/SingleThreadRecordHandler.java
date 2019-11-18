@@ -11,7 +11,7 @@ import io.thill.kafkacap.core.dedup.outbound.RecordSender;
 import io.thill.kafkacap.core.dedup.recovery.PartitionOffsets;
 import io.thill.kafkacap.core.dedup.strategy.DedupResult;
 import io.thill.kafkacap.core.dedup.strategy.DedupStrategy;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import io.thill.kafkacap.core.util.constant.RecordHeaderKeys;
 import io.thill.kafkacap.core.util.io.BitUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -205,7 +205,7 @@ public class SingleThreadRecordHandler<K, V> implements RecordHandler<K, V> {
     for(Header inboundHeader : inboundHeaders) {
       headers.add(inboundHeader);
     }
-    headers.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEND_TIME, BitUtil.longToBytes(clock.now()));
+    headers.add(RecordHeaderKeys.HEADER_KEY_DEDUP_SEND_TIME, BitUtil.longToBytes(clock.millis()));
     offsets.populateHeaders(headers, partition);
     return headers;
   }

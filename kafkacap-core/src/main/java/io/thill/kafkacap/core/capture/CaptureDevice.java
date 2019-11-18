@@ -11,8 +11,6 @@ import io.thill.kafkacap.core.capture.config.CaptureDeviceConfig;
 import io.thill.kafkacap.core.capture.populator.RecordPopulator;
 import io.thill.kafkacap.core.capture.queue.CaptureQueue;
 import io.thill.kafkacap.core.capture.queue.ChronicleCaptureQueue;
-import io.thill.kafkacap.core.util.clock.Clock;
-import io.thill.kafkacap.core.util.clock.SystemMillisClock;
 import io.thill.kafkacap.core.util.io.FileUtil;
 import io.thill.trakrj.Stats;
 import io.thill.trakrj.internal.tracker.ImmutableTrackerId;
@@ -24,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -100,7 +99,7 @@ public abstract class CaptureDevice<K, V> implements Runnable, AutoCloseable {
   }
 
   private BufferedPublisher<K, V> createBufferedPublisher(final Stats stats) {
-    final Clock clock = new SystemMillisClock();
+    final Clock clock = Clock.systemUTC();
 
     logger.info("Deleting {}", new File(config.getChronicle().getPath()).getAbsolutePath());
     FileUtil.deleteRecursive(new File(config.getChronicle().getPath()));

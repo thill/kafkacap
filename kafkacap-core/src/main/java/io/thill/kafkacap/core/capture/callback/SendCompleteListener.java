@@ -17,7 +17,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 public interface SendCompleteListener<K, V> {
   /**
    * @param record      The record that was sent
-   * @param enqueueTime The timestamp from the underlying {@link io.thill.kafkacap.core.util.clock.Clock} representing when this message was added to the {@link
+   * @param enqueueTime The timestamp from the underlying {@link java.time.Clock} representing when this message was added to the {@link
    *                    io.thill.kafkacap.core.capture.queue.CaptureQueue}
    */
   void onSendComplete(ProducerRecord<K, V> record, long enqueueTime);

@@ -5,7 +5,7 @@
 package io.thill.kafkacap.core.capture.callback;
 
 import io.thill.kafkacap.core.capture.BufferedPublisherBuilder;
-import io.thill.kafkacap.core.util.clock.Clock;
+import java.time.Clock;
 import io.thill.trakrj.Intervals;
 import io.thill.trakrj.Stats;
 import io.thill.trakrj.TrackerId;
@@ -42,7 +42,7 @@ public class SendStatTracker<K, V> implements SendCompleteListener<K, V> {
 
   @Override
   public void onSendComplete(ProducerRecord<K, V> record, long enqueueTime) {
-    final long latency = clock.now() - enqueueTime;
+    final long latency = clock.millis() - enqueueTime;
     stats.record(trackerId, latency);
   }
 }

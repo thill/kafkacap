@@ -19,11 +19,10 @@ import io.thill.kafkacap.core.dedup.outbound.RecordSender;
 import io.thill.kafkacap.core.dedup.recovery.LastRecordRecoveryService;
 import io.thill.kafkacap.core.dedup.recovery.RecoveryService;
 import io.thill.kafkacap.core.dedup.strategy.DedupStrategy;
-import io.thill.kafkacap.core.util.clock.Clock;
-import io.thill.kafkacap.core.util.clock.SystemMillisClock;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.util.List;
+import java.time.Clock;
 import java.util.Properties;
 
 /**
@@ -42,7 +41,7 @@ public class DeduplicatorBuilder<K, V> {
   private DedupStrategy<K, V> dedupStrategy;
   private RecordCacheFactory<K, V> recordCacheFactory;
   private boolean orderedCapture;
-  private Clock clock = new SystemMillisClock();
+  private Clock clock = Clock.systemUTC();
   private DedupCompleteListener<K, V> dedupCompleteListener;
   private ConcurrencyMode concurrencyMode = ConcurrencyMode.DISRUPTOR;
   private int disruptorRingBufferSize = 1024;
